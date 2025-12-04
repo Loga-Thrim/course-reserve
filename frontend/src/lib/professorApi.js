@@ -1,0 +1,53 @@
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+const professorApi = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token to requests
+professorApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('professorToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle response errors
+professorApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('professorToken');
+      localStorage.removeItem('professorUser');
+      window.location.href = '/professor/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Professor Auth APIs
+export const professorAuthAPI = {
+  login: (data) => axios.post(`${API_URL}/api/auth/login`, data),
+};
+
+// Professor Course Registration APIs
+export const professorCourseRegistrationAPI = {
+  getAll: () => professorApi.get('/api/professor/course-registration'),
+  getCurriculums: () => professorApi.get('/api/professor/course-registration/curriculums'),
+  create: (data) => professorApi.post('/api/professor/course-registration', data),
+  update: (id, data) => professorApi.put(`/api/professor/course-registration/${id}`, data),
+  delete: (id) => professorApi.delete(`/api/professor/course-registration/${id}`),
+};
+
+export default professorApi;
