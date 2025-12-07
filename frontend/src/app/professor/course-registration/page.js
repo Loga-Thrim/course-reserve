@@ -26,7 +26,8 @@ export default function CourseRegistrationPage() {
     curriculum_en: "",
     description_th: "",
     description_en: "",
-    website: ""
+    website: "",
+    instructors: [""]
   });
 
   useEffect(() => {
@@ -67,7 +68,8 @@ export default function CourseRegistrationPage() {
       curriculum_en: "",
       description_th: "",
       description_en: "",
-      website: ""
+      website: "",
+      instructors: [""]
     });
     setShowModal(true);
   };
@@ -75,6 +77,9 @@ export default function CourseRegistrationPage() {
   const handleEdit = (course) => {
     setModalMode("edit");
     setSelectedCourse(course);
+    const instructorNames = course.instructors && course.instructors.length > 0
+      ? course.instructors.map(i => i.instructor_name)
+      : [""];
     setFormData({
       name_th: course.name_th,
       name_en: course.name_en,
@@ -84,7 +89,8 @@ export default function CourseRegistrationPage() {
       curriculum_en: course.curriculum_en,
       description_th: course.description_th,
       description_en: course.description_en,
-      website: course.website || ""
+      website: course.website || "",
+      instructors: instructorNames
     });
     setShowModal(true);
   };
@@ -104,10 +110,16 @@ export default function CourseRegistrationPage() {
     e.preventDefault();
 
     try {
+      // Filter out empty instructor names
+      const submitData = {
+        ...formData,
+        instructors: formData.instructors.filter(i => i.trim() !== "")
+      };
+
       if (modalMode === "create") {
-        await professorCourseRegistrationAPI.create(formData);
+        await professorCourseRegistrationAPI.create(submitData);
       } else {
-        await professorCourseRegistrationAPI.update(selectedCourse.id, formData);
+        await professorCourseRegistrationAPI.update(selectedCourse.id, submitData);
       }
       setShowModal(false);
       fetchCourses();
@@ -147,6 +159,24 @@ export default function CourseRegistrationPage() {
       ...formData,
       [name]: value
     });
+  };
+
+  // Instructor handlers
+  const handleInstructorChange = (index, value) => {
+    const newInstructors = [...formData.instructors];
+    newInstructors[index] = value;
+    setFormData({ ...formData, instructors: newInstructors });
+  };
+
+  const addInstructor = () => {
+    setFormData({ ...formData, instructors: [...formData.instructors, ""] });
+  };
+
+  const removeInstructor = (index) => {
+    if (formData.instructors.length > 1) {
+      const newInstructors = formData.instructors.filter((_, i) => i !== index);
+      setFormData({ ...formData, instructors: newInstructors });
+    }
   };
 
   // Filter courses based on search query
@@ -235,6 +265,16 @@ export default function CourseRegistrationPage() {
                     <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-full text-xs font-medium">{course.curriculum_th}</span>
                   </div>
 
+                  {/* Display instructors */}
+                  {course.instructors && course.instructors.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-gray-600 text-xs">
+                        <span className="font-medium">อาจารย์ผู้สอน:</span>{" "}
+                        {course.instructors.map(i => i.instructor_name).join(", ")}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="mb-2">
                     <p className="text-gray-600 text-xs line-clamp-2">{course.description_th}</p>
                   </div>
@@ -259,8 +299,14 @@ export default function CourseRegistrationPage() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowModal(false)}
+          >
+            <div 
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="sticky top-0 bg-white px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center border-b border-gray-100">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
                   {modalMode === "create" ? "เพิ่มรายวิชาใหม่" : "แก้ไขรายวิชา"}
@@ -381,6 +427,43 @@ export default function CourseRegistrationPage() {
                         <option key={index} value={curr.curriculum_en} />
                       ))}
                     </datalist>
+                  </div>
+
+                  {/* Instructors - Dynamic fields */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      อาจารย์ผู้สอน
+                    </label>
+                    <div className="space-y-2">
+                      {formData.instructors.map((instructor, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={instructor}
+                            onChange={(e) => handleInstructorChange(index, e.target.value)}
+                            className="input-field flex-1"
+                            placeholder="เช่น ผศ.ดร.สมชาย ใจดี"
+                          />
+                          {formData.instructors.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeInstructor(index)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <FiX className="text-lg" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addInstructor}
+                        className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-2"
+                      >
+                        <FiPlus className="text-base" />
+                        เพิ่มอาจารย์ผู้สอน
+                      </button>
+                    </div>
                   </div>
 
                   {/* Thai Description */}

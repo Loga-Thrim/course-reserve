@@ -3,13 +3,13 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
-    container_name: postgres-bookstore
+    container_name: postgres-course-reserve
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password01
-      POSTGRES_DB: bookstore
+      POSTGRES_DB: course-reserve
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
