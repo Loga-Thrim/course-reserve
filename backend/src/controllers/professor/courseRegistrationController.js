@@ -1,4 +1,5 @@
 const pool = require('../../config/db');
+const { fetchAndStoreRecommendedBooks } = require('../../services/bookRecommendationService');
 
 const courseRegistrationController = {
   // Get distinct curriculum values
@@ -100,6 +101,11 @@ const courseRegistrationController = {
 
       await client.query('COMMIT');
 
+      // Fetch recommended books in background (don't wait for it)
+      fetchAndStoreRecommendedBooks(courseId, description_th, description_en)
+        .then(() => console.log(`Recommended books fetched for course ${courseId}`))
+        .catch(err => console.error(`Error fetching recommended books for course ${courseId}:`, err));
+
       // Fetch the course with instructors
       const courseWithInstructors = await pool.query(
         `SELECT pc.*, 
@@ -184,6 +190,11 @@ const courseRegistrationController = {
       }
 
       await client.query('COMMIT');
+
+      // Fetch recommended books in background (don't wait for it)
+      fetchAndStoreRecommendedBooks(parseInt(id), description_th, description_en)
+        .then(() => console.log(`Recommended books updated for course ${id}`))
+        .catch(err => console.error(`Error updating recommended books for course ${id}:`, err));
 
       // Fetch the course with instructors
       const courseWithInstructors = await pool.query(

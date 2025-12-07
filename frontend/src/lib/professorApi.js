@@ -50,4 +50,15 @@ export const professorCourseRegistrationAPI = {
   delete: (id) => professorApi.delete(`/api/professor/course-registration/${id}`),
 };
 
+// Professor Course Books APIs
+export const professorCourseBooksAPI = {
+  getMyCourses: () => professorApi.get('/api/professor/course-books/my-courses'),
+  searchBooks: (keyword) => professorApi.get(`/api/professor/course-books/search?keyword=${encodeURIComponent(keyword)}`),
+  getBookSuggestions: (courseId) => professorApi.get(`/api/professor/course-books/${courseId}/suggestions`),
+  refreshBookSuggestions: (courseId) => professorApi.post(`/api/professor/course-books/${courseId}/refresh`),
+  getCourseBooks: (courseId) => professorApi.get(`/api/professor/course-books/${courseId}`),
+  addBookToCourse: (courseId, bookData) => professorApi.post(`/api/professor/course-books/${courseId}`, bookData),
+  removeBookFromCourse: (courseId, bookId) => professorApi.delete(`/api/professor/course-books/${courseId}/${bookId}`),
+};
+
 export default professorApi;

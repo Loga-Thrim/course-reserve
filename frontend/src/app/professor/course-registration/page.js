@@ -3,19 +3,22 @@
 import { useEffect, useState } from "react";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseRegistrationAPI } from "../../../lib/professorApi";
-import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch, FiUser } from "react-icons/fi";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function CourseRegistrationPage() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [curriculums, setCurriculums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [showMyCourses, setShowMyCourses] = useState(false);
+
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  
+
   // Form data
   const [formData, setFormData] = useState({
     name_th: "",
@@ -131,7 +134,7 @@ export default function CourseRegistrationPage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Auto-fill corresponding curriculum field when one is selected
     if (name === "curriculum_th") {
       const matchingCurr = curriculums.find(c => c.curriculum_th === value);
@@ -154,7 +157,7 @@ export default function CourseRegistrationPage() {
         return;
       }
     }
-    
+
     setFormData({
       ...formData,
       [name]: value
@@ -179,10 +182,10 @@ export default function CourseRegistrationPage() {
     }
   };
 
-  // Filter courses based on search query
+  // Filter courses based on search query and "my courses" filter
   const filteredCourses = courses.filter(course => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       course.name_th.toLowerCase().includes(query) ||
       course.name_en.toLowerCase().includes(query) ||
       course.code_th.toLowerCase().includes(query) ||
@@ -190,6 +193,17 @@ export default function CourseRegistrationPage() {
       course.curriculum_th.toLowerCase().includes(query) ||
       course.curriculum_en.toLowerCase().includes(query)
     );
+
+    // If "my courses" filter is active, also check if user name is in instructors
+    if (showMyCourses && user?.name) {
+      const userName = user.name.toLowerCase();
+      const isInstructor = course.instructors?.some(i =>
+        i.instructor_name?.toLowerCase().includes(userName)
+      );
+      return matchesSearch && isInstructor;
+    }
+
+    return matchesSearch;
   });
 
   return (
@@ -202,17 +216,28 @@ export default function CourseRegistrationPage() {
           </button>
         </div>
 
-        {/* Search Filter */}
         <div className="mb-6">
-          <div className="relative">
-            <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-400" />
-            <input
-              type="text"
-              placeholder="ค้นหารายวิชา (ชื่อวิชา, รหัสวิชา, หลักสูตร)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-100 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 transition-all outline-none"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowMyCourses(!showMyCourses)}
+              className={`px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all whitespace-nowrap ${showMyCourses
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
+                  : "bg-white border-2 border-emerald-100 text-gray-600 hover:border-emerald-400"
+                }`}
+            >
+              <FiUser className="text-lg" />
+              รายวิชาของฉัน
+            </button>
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-400" />
+              <input
+                type="text"
+                placeholder="ค้นหารายวิชา (ชื่อวิชา, รหัสวิชา, หลักสูตร)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-100 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 transition-all outline-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -281,9 +306,9 @@ export default function CourseRegistrationPage() {
 
                   {course.website && (
                     <div className="mt-2 pt-2 border-t border-emerald-100">
-                      <a 
-                        href={course.website} 
-                        target="_blank" 
+                      <a
+                        href={course.website}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-emerald-600 hover:text-teal-600 hover:underline text-xs flex items-center gap-1 transition-colors"
                       >
@@ -299,11 +324,11 @@ export default function CourseRegistrationPage() {
 
         {/* Modal */}
         {showModal && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             onClick={() => setShowModal(false)}
           >
-            <div 
+            <div
               className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >

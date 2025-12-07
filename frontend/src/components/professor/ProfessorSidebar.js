@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiBook, FiGrid, FiLogOut, FiAward, FiX } from "react-icons/fi";
+import { FiHome, FiBook, FiGrid, FiLogOut, FiAward, FiX, FiBookOpen } from "react-icons/fi";
 
 export default function ProfessorSidebar({ onLogout, onClose }) {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function ProfessorSidebar({ onLogout, onClose }) {
   const menuItems = [
     { href: "/professor/dashboard", icon: FiHome, label: "แดชบอร์ด", color: "blue" },
     { href: "/professor/course-registration", icon: FiGrid, label: "ลงทะเบียนรายวิชา", color: "purple" },
+    { href: "/professor/course-books", icon: FiBookOpen, label: "คลังหนังสือประจำวิชา", color: "teal" },
   ];
 
   return (

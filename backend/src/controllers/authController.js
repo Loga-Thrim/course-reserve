@@ -35,6 +35,7 @@ const authController = {
         { 
           userId: newUser.rows[0].id, 
           email: newUser.rows[0].email,
+          name: newUser.rows[0].name,
           role: newUser.rows[0].role 
         },
         process.env.JWT_SECRET,
@@ -81,6 +82,7 @@ const authController = {
         { 
           userId: user.rows[0].id, 
           email: user.rows[0].email,
+          name: user.rows[0].name,
           role: user.rows[0].role 
         },
         process.env.JWT_SECRET,
