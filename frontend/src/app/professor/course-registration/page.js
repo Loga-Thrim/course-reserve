@@ -3,40 +3,55 @@
 import { useEffect, useState } from "react";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseRegistrationAPI } from "../../../lib/professorApi";
-import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch, FiUser } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch, FiUpload, FiFile } from "react-icons/fi";
+import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function CourseRegistrationPage() {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [curriculums, setCurriculums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showMyCourses, setShowMyCourses] = useState(false);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedCourse, setSelectedCourse] = useState(null);
 
+  // File upload states
+  const [courseFiles, setCourseFiles] = useState([]);
+  const [pendingFiles, setPendingFiles] = useState([]); // Files to upload after course creation
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   // Form data
   const [formData, setFormData] = useState({
-    name_th: "",
-    name_en: "",
+    faculty_id: "",
+    curriculum_id: "",
     code_th: "",
     code_en: "",
-    curriculum_th: "",
-    curriculum_en: "",
+    name_th: "",
+    name_en: "",
+    instructors: [""],
     description_th: "",
     description_en: "",
-    website: "",
-    instructors: [""]
+    keywords: [""],
+    website: ""
   });
 
   useEffect(() => {
     fetchCourses();
-    fetchCurriculums();
+    fetchFaculties();
   }, []);
+
+  useEffect(() => {
+    if (formData.faculty_id) {
+      fetchCurriculums(formData.faculty_id);
+    } else {
+      setCurriculums([]);
+    }
+  }, [formData.faculty_id]);
 
   const fetchCourses = async () => {
     try {
@@ -50,9 +65,18 @@ export default function CourseRegistrationPage() {
     }
   };
 
-  const fetchCurriculums = async () => {
+  const fetchFaculties = async () => {
     try {
-      const response = await professorCourseRegistrationAPI.getCurriculums();
+      const response = await professorCourseRegistrationAPI.getFaculties();
+      setFaculties(response.data);
+    } catch (error) {
+      console.error("Error fetching faculties:", error);
+    }
+  };
+
+  const fetchCurriculums = async (facultyId) => {
+    try {
+      const response = await professorCourseRegistrationAPI.getCurriculums(facultyId);
       setCurriculums(response.data);
     } catch (error) {
       console.error("Error fetching curriculums:", error);
@@ -62,17 +86,20 @@ export default function CourseRegistrationPage() {
   const handleCreate = () => {
     setModalMode("create");
     setSelectedCourse(null);
+    setCourseFiles([]);
+    setPendingFiles([]);
     setFormData({
-      name_th: "",
-      name_en: "",
+      faculty_id: "",
+      curriculum_id: "",
       code_th: "",
       code_en: "",
-      curriculum_th: "",
-      curriculum_en: "",
+      name_th: "",
+      name_en: "",
+      instructors: user?.name ? [user.name] : [""],
       description_th: "",
       description_en: "",
-      website: "",
-      instructors: [""]
+      keywords: [""],
+      website: ""
     });
     setShowModal(true);
   };
@@ -84,17 +111,24 @@ export default function CourseRegistrationPage() {
       ? course.instructors.map(i => i.instructor_name)
       : [""];
     setFormData({
-      name_th: course.name_th,
-      name_en: course.name_en,
-      code_th: course.code_th,
-      code_en: course.code_en,
-      curriculum_th: course.curriculum_th,
-      curriculum_en: course.curriculum_en,
-      description_th: course.description_th,
-      description_en: course.description_en,
-      website: course.website || "",
-      instructors: instructorNames
+      faculty_id: course.faculty_id || "",
+      curriculum_id: course.curriculum_id || "",
+      code_th: course.code_th || "",
+      code_en: course.code_en || "",
+      name_th: course.name_th || "",
+      name_en: course.name_en || "",
+      instructors: instructorNames,
+      description_th: course.description_th || "",
+      description_en: course.description_en || "",
+      keywords: course.keywords?.length > 0 ? course.keywords : [""],
+      website: course.website || ""
     });
+    // Fetch curriculums for the selected faculty
+    if (course.faculty_id) {
+      fetchCurriculums(course.faculty_id);
+    }
+    // Fetch files for this course
+    fetchCourseFiles(course.id);
     setShowModal(true);
   };
 
@@ -105,7 +139,7 @@ export default function CourseRegistrationPage() {
       await professorCourseRegistrationAPI.delete(id);
       fetchCourses();
     } catch (error) {
-      alert("ไม่สามารถลบรายวิชาได้");
+      toast.error("ไม่สามารถลบรายวิชาได้");
     }
   };
 
@@ -113,51 +147,43 @@ export default function CourseRegistrationPage() {
     e.preventDefault();
 
     try {
-      // Filter out empty instructor names
+      // Filter out empty values
       const submitData = {
         ...formData,
-        instructors: formData.instructors.filter(i => i.trim() !== "")
+        instructors: formData.instructors.filter(i => i.trim() !== ""),
+        keywords: formData.keywords.filter(k => k.trim() !== "")
       };
 
       if (modalMode === "create") {
-        await professorCourseRegistrationAPI.create(submitData);
+        const response = await professorCourseRegistrationAPI.create(submitData);
+        const newCourseId = response.data.id;
+        
+        // Upload pending files if any
+        if (pendingFiles.length > 0 && newCourseId) {
+          for (const file of pendingFiles) {
+            try {
+              await professorCourseRegistrationAPI.uploadFile(newCourseId, file);
+            } catch (err) {
+              console.error("Error uploading file:", err);
+            }
+          }
+          setPendingFiles([]);
+        }
+        
+        toast.success("สร้างรายวิชาสำเร็จ");
       } else {
         await professorCourseRegistrationAPI.update(selectedCourse.id, submitData);
+        toast.success("บันทึกการแก้ไขสำเร็จ");
       }
       setShowModal(false);
       fetchCourses();
-      fetchCurriculums(); // Refresh curriculum suggestions
     } catch (error) {
-      alert(error.response?.data?.error || "เกิดข้อผิดพลาด");
+      toast.error(error.response?.data?.error || "เกิดข้อผิดพลาด");
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Auto-fill corresponding curriculum field when one is selected
-    if (name === "curriculum_th") {
-      const matchingCurr = curriculums.find(c => c.curriculum_th === value);
-      if (matchingCurr) {
-        setFormData({
-          ...formData,
-          curriculum_th: value,
-          curriculum_en: matchingCurr.curriculum_en
-        });
-        return;
-      }
-    } else if (name === "curriculum_en") {
-      const matchingCurr = curriculums.find(c => c.curriculum_en === value);
-      if (matchingCurr) {
-        setFormData({
-          ...formData,
-          curriculum_en: value,
-          curriculum_th: matchingCurr.curriculum_th
-        });
-        return;
-      }
-    }
-
     setFormData({
       ...formData,
       [name]: value
@@ -182,26 +208,123 @@ export default function CourseRegistrationPage() {
     }
   };
 
+  // Keyword handlers
+  const handleKeywordChange = (index, value) => {
+    const newKeywords = [...formData.keywords];
+    newKeywords[index] = value;
+    setFormData({ ...formData, keywords: newKeywords });
+  };
+
+  const addKeyword = () => {
+    setFormData({ ...formData, keywords: [...formData.keywords, ""] });
+  };
+
+  const removeKeyword = (index) => {
+    if (formData.keywords.length > 1) {
+      const newKeywords = formData.keywords.filter((_, i) => i !== index);
+      setFormData({ ...formData, keywords: newKeywords });
+    }
+  };
+
+  // File handlers
+  const fetchCourseFiles = async (courseId) => {
+    try {
+      const response = await professorCourseRegistrationAPI.getFiles(courseId);
+      setCourseFiles(response.data);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('ไฟล์ที่อนุญาต: PDF, Word, PowerPoint, Excel เท่านั้น');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('ขนาดไฟล์ต้องไม่เกิน 10MB');
+      e.target.value = '';
+      return;
+    }
+
+    // If creating new course, store file locally
+    if (modalMode === "create") {
+      setPendingFiles(prev => [...prev, file]);
+      toast.success('เพิ่มไฟล์แล้ว (จะอัปโหลดเมื่อบันทึกรายวิชา)');
+      e.target.value = '';
+      return;
+    }
+
+    // If editing, upload immediately
+    try {
+      setUploadingFile(true);
+      await professorCourseRegistrationAPI.uploadFile(selectedCourse.id, file);
+      toast.success('อัปโหลดไฟล์สำเร็จ');
+      fetchCourseFiles(selectedCourse.id);
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'อัปโหลดไฟล์ไม่สำเร็จ');
+    } finally {
+      setUploadingFile(false);
+      e.target.value = '';
+    }
+  };
+
+  const removePendingFile = (index) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    if (!confirm('ต้องการลบไฟล์นี้หรือไม่?')) return;
+
+    try {
+      await professorCourseRegistrationAPI.deleteFile(selectedCourse.id, fileId);
+      toast.success('ลบไฟล์สำเร็จ');
+      fetchCourseFiles(selectedCourse.id);
+    } catch (error) {
+      toast.error('ลบไฟล์ไม่สำเร็จ');
+    }
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('word') || fileType.includes('document')) return '📝';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📊';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📈';
+    return '📁';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   // Filter courses based on search query and "my courses" filter
   const filteredCourses = courses.filter(course => {
     const query = searchQuery.toLowerCase();
     const matchesSearch = (
-      course.name_th.toLowerCase().includes(query) ||
-      course.name_en.toLowerCase().includes(query) ||
-      course.code_th.toLowerCase().includes(query) ||
-      course.code_en.toLowerCase().includes(query) ||
-      course.curriculum_th.toLowerCase().includes(query) ||
-      course.curriculum_en.toLowerCase().includes(query)
+      (course.name_th || '').toLowerCase().includes(query) ||
+      (course.name_en || '').toLowerCase().includes(query) ||
+      (course.code_th || '').toLowerCase().includes(query) ||
+      (course.code_en || '').toLowerCase().includes(query)
     );
-
-    // If "my courses" filter is active, also check if user name is in instructors
-    if (showMyCourses && user?.name) {
-      const userName = user.name.toLowerCase();
-      const isInstructor = course.instructors?.some(i =>
-        i.instructor_name?.toLowerCase().includes(userName)
-      );
-      return matchesSearch && isInstructor;
-    }
 
     return matchesSearch;
   });
@@ -218,16 +341,6 @@ export default function CourseRegistrationPage() {
 
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => setShowMyCourses(!showMyCourses)}
-              className={`px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all whitespace-nowrap ${showMyCourses
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
-                  : "bg-white border-2 border-emerald-100 text-gray-600 hover:border-emerald-400"
-                }`}
-            >
-              <FiUser className="text-lg" />
-              รายวิชาของฉัน
-            </button>
             <div className="relative flex-1">
               <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-400" />
               <input
@@ -286,8 +399,17 @@ export default function CourseRegistrationPage() {
                     </div>
                   </div>
 
-                  <div className="mb-2">
-                    <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-full text-xs font-medium">{course.curriculum_th}</span>
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {course.faculty_name && (
+                      <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        {course.faculty_name}
+                      </span>
+                    )}
+                    {course.curriculum_name && (
+                      <span className="inline-block px-2 py-0.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-full text-xs font-medium">
+                        {course.curriculum_name} {course.curriculum_level && `(${course.curriculum_level})`}
+                      </span>
+                    )}
                   </div>
 
                   {/* Display instructors */}
@@ -346,39 +468,50 @@ export default function CourseRegistrationPage() {
 
               <form onSubmit={handleSubmit} className="p-4 sm:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  {/* Thai Name */}
+                  {/* 1. Faculty */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ชื่อวิชา (ไทย) <span className="text-red-500">*</span>
+                      คณะ <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="name_th"
+                    <select
+                      name="faculty_id"
                       required
-                      value={formData.name_th}
+                      value={formData.faculty_id}
                       onChange={handleInputChange}
                       className="input-field w-full"
-                      placeholder="เช่น การเขียนโปรแกรมคอมพิวเตอร์"
-                    />
+                    >
+                      <option value="">เลือกคณะ</option>
+                      {faculties.map((faculty) => (
+                        <option key={faculty.id} value={faculty.id}>
+                          {faculty.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* English Name */}
+                  {/* 2. Curriculum */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ชื่อวิชา (อังกฤษ) <span className="text-red-500">*</span>
+                      หลักสูตร <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="name_en"
+                    <select
+                      name="curriculum_id"
                       required
-                      value={formData.name_en}
+                      value={formData.curriculum_id}
                       onChange={handleInputChange}
                       className="input-field w-full"
-                      placeholder="e.g. Computer Programming"
-                    />
+                      disabled={!formData.faculty_id}
+                    >
+                      <option value="">เลือกหลักสูตร</option>
+                      {curriculums.map((curriculum) => (
+                        <option key={curriculum.id} value={curriculum.id}>
+                          {curriculum.name} ({curriculum.level})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Thai Code */}
+                  {/* 3. Thai Code */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       รหัสวิชา (ไทย) <span className="text-red-500">*</span>
@@ -390,74 +523,60 @@ export default function CourseRegistrationPage() {
                       value={formData.code_th}
                       onChange={handleInputChange}
                       className="input-field w-full"
-                      placeholder="เช่น วท102"
+                      placeholder="ตัวอย่าง วท102"
                     />
                   </div>
 
                   {/* English Code */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      รหัสวิชา (อังกฤษ) <span className="text-red-500">*</span>
+                      รหัสวิชา (อังกฤษ)
                     </label>
                     <input
                       type="text"
                       name="code_en"
-                      required
                       value={formData.code_en}
                       onChange={handleInputChange}
                       className="input-field w-full"
-                      placeholder="e.g. CS102"
+                      placeholder="example CS102"
                     />
                   </div>
 
-                  {/* Thai Curriculum */}
+                  {/* 4. Thai Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      หลักสูตร (ไทย) <span className="text-red-500">*</span>
+                      ชื่อวิชา (ไทย) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      name="curriculum_th"
+                      name="name_th"
                       required
-                      value={formData.curriculum_th}
+                      value={formData.name_th}
                       onChange={handleInputChange}
-                      list="curriculum-th-list"
                       className="input-field w-full"
-                      placeholder="เช่น วิทยาศาสตร์คอมพิวเตอร์"
+                      placeholder="ตัวอย่าง การเขียนโปรแกรมคอมพิวเตอร์"
                     />
-                    <datalist id="curriculum-th-list">
-                      {curriculums.map((curr, index) => (
-                        <option key={index} value={curr.curriculum_th} />
-                      ))}
-                    </datalist>
                   </div>
 
-                  {/* English Curriculum */}
+                  {/* English Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      หลักสูตร (อังกฤษ) <span className="text-red-500">*</span>
+                      ชื่อวิชา (อังกฤษ)
                     </label>
                     <input
                       type="text"
-                      name="curriculum_en"
-                      required
-                      value={formData.curriculum_en}
+                      name="name_en"
+                      value={formData.name_en}
                       onChange={handleInputChange}
-                      list="curriculum-en-list"
                       className="input-field w-full"
-                      placeholder="e.g. Computer Science"
+                      placeholder="example Computer Programming"
                     />
-                    <datalist id="curriculum-en-list">
-                      {curriculums.map((curr, index) => (
-                        <option key={index} value={curr.curriculum_en} />
-                      ))}
-                    </datalist>
                   </div>
 
-                  {/* Instructors - Dynamic fields */}
+                  {/* 5. Instructors - Dynamic fields */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      อาจารย์ผู้สอน
+                      อาจารย์ผู้สอน <span className="text-red-500">*</span>
                     </label>
                     <div className="space-y-2">
                       {formData.instructors.map((instructor, index) => (
@@ -467,7 +586,7 @@ export default function CourseRegistrationPage() {
                             value={instructor}
                             onChange={(e) => handleInstructorChange(index, e.target.value)}
                             className="input-field flex-1"
-                            placeholder="เช่น ผศ.ดร.สมชาย ใจดี"
+                            placeholder="ตัวอย่าง ผศ.ดร.สมชาย ใจดี"
                           />
                           {formData.instructors.length > 1 && (
                             <button
@@ -491,7 +610,7 @@ export default function CourseRegistrationPage() {
                     </div>
                   </div>
 
-                  {/* Thai Description */}
+                  {/* 6. Thai Description */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       คำอธิบายรายวิชา (ไทย) <span className="text-red-500">*</span>
@@ -510,11 +629,10 @@ export default function CourseRegistrationPage() {
                   {/* English Description */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      คำอธิบายรายวิชา (อังกฤษ) <span className="text-red-500">*</span>
+                      คำอธิบายรายวิชา (อังกฤษ)
                     </label>
                     <textarea
                       name="description_en"
-                      required
                       value={formData.description_en}
                       onChange={handleInputChange}
                       rows="4"
@@ -523,7 +641,125 @@ export default function CourseRegistrationPage() {
                     />
                   </div>
 
-                  {/* Website */}
+                  {/* 7. Keywords - Dynamic fields */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      คีย์เวิร์ด
+                    </label>
+                    <div className="space-y-2">
+                      {formData.keywords.map((keyword, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={keyword}
+                            onChange={(e) => handleKeywordChange(index, e.target.value)}
+                            className="input-field flex-1"
+                            placeholder="ตัวอย่าง การเขียนโปรแกรม, Python, Algorithm"
+                          />
+                          {formData.keywords.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeKeyword(index)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <FiX className="text-lg" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addKeyword}
+                        className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-2"
+                      >
+                        <FiPlus className="text-base" />
+                        เพิ่มคีย์เวิร์ด
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 8. File Upload */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ไฟล์ประกอบการสอน
+                    </label>
+                    
+                    <div className="space-y-3">
+                      {/* Upload area */}
+                      <label className="block border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer">
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                          className="hidden"
+                          disabled={uploadingFile}
+                        />
+                        {uploadingFile ? (
+                          <div className="flex items-center justify-center gap-2 text-emerald-600">
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-500 border-t-transparent"></div>
+                            <span>กำลังอัปโหลด...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FiUpload className="mx-auto text-2xl text-gray-400 mb-1" />
+                            <p className="text-sm text-gray-500">คลิกเพื่ออัปโหลดไฟล์</p>
+                            <p className="text-xs text-gray-400">PDF, Word, PowerPoint, Excel (สูงสุด 10MB)</p>
+                          </>
+                        )}
+                      </label>
+
+                      {/* Pending files (for new course) */}
+                      {modalMode === "create" && pendingFiles.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-amber-600 font-medium">ไฟล์ที่รอการอัปโหลด:</p>
+                          {pendingFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-lg">{getFileIcon(file.type)}</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                                  <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removePendingFile(index)}
+                                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <FiTrash2 className="text-sm" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Existing files (for edit mode) */}
+                      {modalMode === "edit" && courseFiles.length > 0 && (
+                        <div className="space-y-2">
+                          {courseFiles.map((file) => (
+                            <div key={file.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-lg">{getFileIcon(file.file_type)}</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{file.original_name}</p>
+                                  <p className="text-xs text-gray-400">{formatFileSize(file.file_size)}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteFile(file.id)}
+                                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <FiTrash2 className="text-sm" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 9. Website */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       เว็บไซต์สำหรับศึกษาเพิ่มเติม

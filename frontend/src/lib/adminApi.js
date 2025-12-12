@@ -65,32 +65,13 @@ export const adminCurriculumsAPI = {
   delete: (id) => adminApi.delete(`/api/admin/curriculums/${id}`),
 };
 
-// Admin Courses APIs
-export const adminCoursesAPI = {
-  getAll: (params) => adminApi.get('/api/admin/courses', { params }),
-  create: (data) => adminApi.post('/api/admin/courses', data),
-  update: (id, data) => adminApi.put(`/api/admin/courses/${id}`, data),
-  delete: (id) => adminApi.delete(`/api/admin/courses/${id}`),
-};
-
-// Admin Course Reserves APIs
-export const adminCourseReservesAPI = {
-  getAll: (params) => adminApi.get('/api/admin/course-reserves', { params }),
-  create: (data) => adminApi.post('/api/admin/course-reserves', data),
-  delete: (id) => adminApi.delete(`/api/admin/course-reserves/${id}`),
-};
-
-// Admin Books APIs
-export const adminBooksAPI = {
-  getAll: (params) => adminApi.get('/api/admin/books', { params }),
-  create: (data) => adminApi.post('/api/admin/books', data),
-  update: (id, data) => adminApi.put(`/api/admin/books/${id}`, data),
-  delete: (id) => adminApi.delete(`/api/admin/books/${id}`),
-};
-
-// Admin Categories API (reuse existing)
-export const adminCategoriesAPI = {
-  getAll: () => adminApi.get('/api/categories'),
+// Admin Course Books APIs (for recommending books to professor courses)
+export const adminCourseBooksAPI = {
+  getAllCourses: (params) => adminApi.get('/api/admin/course-books/courses', { params }),
+  searchBooks: (keyword) => adminApi.get('/api/admin/course-books/search', { params: { keyword } }),
+  getRecommendedBooks: (courseId) => adminApi.get(`/api/admin/course-books/${courseId}`),
+  addRecommendedBook: (courseId, data) => adminApi.post(`/api/admin/course-books/${courseId}`, data),
+  removeRecommendedBook: (courseId, bookId) => adminApi.delete(`/api/admin/course-books/${courseId}/${bookId}`),
 };
 
 export default adminApi;

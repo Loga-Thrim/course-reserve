@@ -33,17 +33,7 @@ export default function Navbar() {
                   : 'text-gray-600 hover:text-brand'
               }`}
             >
-              หนังสือแนะนำ
-            </Link>
-            <Link 
-              href="/books" 
-              className={`font-medium transition-colors ${
-                pathname === '/books' 
-                  ? 'text-brand font-semibold' 
-                  : 'text-gray-600 hover:text-brand'
-              }`}
-            >
-              ค้นหาหนังสือ
+              หนังสือประจำวิชา
             </Link>
 
             {/* User Info and Logout */}
@@ -88,18 +78,7 @@ export default function Navbar() {
                     : 'text-gray-600 hover:text-brand'
                 }`}
               >
-                หนังสือแนะนำ
-              </Link>
-              <Link 
-                href="/books" 
-                onClick={() => setIsMenuOpen(false)}
-                className={`font-medium transition-colors py-2 ${
-                  pathname === '/books' 
-                    ? 'text-brand font-semibold' 
-                    : 'text-gray-600 hover:text-brand'
-                }`}
-              >
-                ค้นหาหนังสือ
+                หนังสือประจำวิชา
               </Link>
 
               {user && (

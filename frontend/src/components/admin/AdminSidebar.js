@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiUsers, FiBook, FiGrid, FiLogOut, FiX } from "react-icons/fi";
+import { FiHome, FiUsers, FiBook, FiGrid, FiLogOut, FiX, FiBookOpen } from "react-icons/fi";
 
 export default function AdminSidebar({ onLogout, onClose }) {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function AdminSidebar({ onLogout, onClose }) {
   const menuItems = [
     { href: "/admin/dashboard", icon: FiHome, label: "แดชบอร์ด" },
     { href: "/admin/users", icon: FiUsers, label: "จัดการผู้ใช้" },
+    { href: "/admin/course-books", icon: FiBookOpen, label: "คลังหนังสือประจำวิชา" },
   ];
 
   return (

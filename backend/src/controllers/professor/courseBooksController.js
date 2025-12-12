@@ -1,19 +1,16 @@
 const pool = require('../../config/db');
 const axios = require('axios');
 const https = require('https');
-const { extractKeywords } = require('../../services/bookRecommendationService');
 
 const LIBRARY_API_URL = 'https://library.psru.ac.th/portal/lib_api/bookKeyword';
 const LIBRARY_API_TOKEN = '12b5381c97af8dfce39652300b81db5e';
 
-// Create axios instance that ignores SSL certificate errors (for library API)
 const libraryApi = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false
   })
 });
 
-// Search books from library API
 const searchLibraryBooks = async (keyword) => {
   try {
     const response = await libraryApi.get(`${LIBRARY_API_URL}/${encodeURIComponent(keyword)}`, {
@@ -34,9 +31,10 @@ const searchLibraryBooks = async (keyword) => {
 };
 
 const courseBooksController = {
-  // Get courses that user can manage (is instructor - name must be in course_instructors)
+  // Get courses where user is creator OR instructor
   getMyCourses: async (req, res) => {
     try {
+      const professorId = req.user.userId;
       const userName = req.user.name;
 
       const result = await pool.query(
@@ -49,14 +47,15 @@ const courseBooksController = {
                 ) as instructors
          FROM professor_courses pc
          LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE EXISTS (
-           SELECT 1 FROM course_instructors ci2 
-           WHERE ci2.course_id = pc.id 
-           AND LOWER(ci2.instructor_name) LIKE LOWER($1)
-         )
+         WHERE pc.professor_id = $1
+            OR EXISTS (
+              SELECT 1 FROM course_instructors ci2 
+              WHERE ci2.course_id = pc.id 
+              AND LOWER(ci2.instructor_name) LIKE LOWER($2)
+            )
          GROUP BY pc.id
          ORDER BY pc.created_at DESC`,
-        [`%${userName}%`]
+        [professorId, `%${userName}%`]
       );
 
       res.json(result.rows);
@@ -74,7 +73,7 @@ const courseBooksController = {
 
       // Check if user is instructor of this course and get course details
       const courseCheck = await pool.query(
-        `SELECT pc.id, pc.description_th, pc.description_en FROM professor_courses pc
+        `SELECT pc.id, pc.keywords FROM professor_courses pc
          LEFT JOIN course_instructors ci ON pc.id = ci.course_id
          WHERE pc.id = $1 
            AND LOWER(ci.instructor_name) LIKE LOWER($2)`,
@@ -87,21 +86,21 @@ const courseBooksController = {
 
       const course = courseCheck.rows[0];
 
-      // Get recommended books from database
+      // Get recommended books from database (admin recommended first)
       const result = await pool.query(
         `SELECT DISTINCT book_id as id, title, author, publisher, callnumber, isbn, bookcover, 
-                mattype_name as "mattypeName", lang, keyword_source
+                mattype_name as "mattypeName", lang, keyword_source, admin_recommended
          FROM course_recommended_books 
          WHERE course_id = $1
-         ORDER BY title`,
+         ORDER BY admin_recommended DESC, title`,
         [courseId]
       );
 
-      // Extract all keywords from course description (not just ones with results)
-      const allKeywords = extractKeywords(course.description_th, course.description_en);
+      // Use keywords from course
+      const courseKeywords = course.keywords || [];
 
       res.json({
-        keywords: allKeywords,
+        keywords: courseKeywords,
         books: result.rows
       });
     } catch (error) {
@@ -131,9 +130,19 @@ const courseBooksController = {
 
       const course = courseCheck.rows[0];
 
-      // Import and call the service
+      // Use keywords from course only
       const { fetchAndStoreRecommendedBooks } = require('../../services/bookRecommendationService');
-      const result = await fetchAndStoreRecommendedBooks(parseInt(courseId), course.description_th, course.description_en);
+      
+      const keywordsToUse = course.keywords || [];
+      
+      if (keywordsToUse.length === 0) {
+        return res.status(400).json({ 
+          error: 'กรุณาเพิ่มคีย์เวิร์ดในรายวิชาก่อนดึงข้อมูลหนังสือ',
+          keywords: []
+        });
+      }
+      
+      const result = await fetchAndStoreRecommendedBooks(parseInt(courseId), keywordsToUse);
 
       res.json({ 
         message: 'รีเฟรชหนังสือแนะนำเรียบร้อยแล้ว',

@@ -1,16 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const booksRoutes = require('./routes/books');
-const borrowsRoutes = require('./routes/borrows');
-const recommendationsRoutes = require('./routes/recommendations');
-const categoriesRoutes = require('./routes/categories');
 const facultiesRoutes = require('./routes/faculties');
 const adminRoutes = require('./routes/admin');
 const professorRoutes = require('./routes/professor');
+const courseBooksRoutes = require('./routes/courseBooks');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +18,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -28,13 +29,10 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/books', booksRoutes);
-app.use('/api/borrows', borrowsRoutes);
-app.use('/api/recommendations', recommendationsRoutes);
-app.use('/api/categories', categoriesRoutes);
 app.use('/api/faculties', facultiesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/professor', professorRoutes);
+app.use('/api/course-books', courseBooksRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

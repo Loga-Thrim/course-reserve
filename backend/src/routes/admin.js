@@ -3,10 +3,8 @@ const router = express.Router();
 const adminAuth = require('../middleware/adminAuth');
 const adminUsersController = require('../controllers/admin/usersController');
 const adminFacultiesController = require('../controllers/admin/facultiesController');
-const adminBooksController = require('../controllers/admin/booksController');
 const adminCurriculumsController = require('../controllers/admin/curriculumsController');
-const adminCoursesController = require('../controllers/admin/coursesController');
-const adminCourseReservesController = require('../controllers/admin/courseReservesController');
+const adminCourseBooksController = require('../controllers/admin/courseBooksController');
 
 // All routes require admin authentication
 router.use(adminAuth);
@@ -29,21 +27,11 @@ router.post('/curriculums', adminCurriculumsController.createCurriculum);
 router.put('/curriculums/:id', adminCurriculumsController.updateCurriculum);
 router.delete('/curriculums/:id', adminCurriculumsController.deleteCurriculum);
 
-// Courses routes
-router.get('/courses', adminCoursesController.getAllCourses);
-router.post('/courses', adminCoursesController.createCourse);
-router.put('/courses/:id', adminCoursesController.updateCourse);
-router.delete('/courses/:id', adminCoursesController.deleteCourse);
-
-// Course Reserves routes
-router.get('/course-reserves', adminCourseReservesController.getAllReserves);
-router.post('/course-reserves', adminCourseReservesController.createReserve);
-router.delete('/course-reserves/:id', adminCourseReservesController.deleteReserve);
-
-// Books routes
-router.get('/books', adminBooksController.getAllBooks);
-router.post('/books', adminBooksController.createBook);
-router.put('/books/:id', adminBooksController.updateBook);
-router.delete('/books/:id', adminBooksController.deleteBook);
+// Course Books routes (admin recommendations for professor courses)
+router.get('/course-books/courses', adminCourseBooksController.getAllCourses);
+router.get('/course-books/search', adminCourseBooksController.searchBooks);
+router.get('/course-books/:courseId', adminCourseBooksController.getRecommendedBooks);
+router.post('/course-books/:courseId', adminCourseBooksController.addRecommendedBook);
+router.delete('/course-books/:courseId/:bookId', adminCourseBooksController.removeRecommendedBook);
 
 module.exports = router;

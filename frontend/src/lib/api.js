@@ -40,26 +40,13 @@ export const authAPI = {
   getCurrentUser: () => api.get('/api/auth/me'),
 };
 
-export const booksAPI = {
-  getAll: (params) => api.get('/api/books', { params }),
-  getById: (id) => api.get(`/api/books/${id}`),
-};
-
-export const categoriesAPI = {
-  getAll: () => api.get('/api/categories'),
-};
-
 export const facultiesAPI = {
   getAll: () => api.get('/api/faculties'),
 };
-export const borrowsAPI = {
-  borrow: (bookId) => api.post('/api/borrows', { bookId }),
-  getUserBorrows: (params) => api.get('/api/borrows', { params }),
-  returnBook: (id) => api.put(`/api/borrows/${id}/return`),
-};
 
-export const recommendationsAPI = {
-  get: (params) => api.get('/api/recommendations', { params }),
+export const courseBooksAPI = {
+  getCurriculums: () => api.get('/api/course-books/curriculums'),
+  getBooks: (params) => api.get('/api/course-books/books', { params }),
 };
 
 export default api;

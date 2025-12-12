@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../../components/admin/AdminLayout";
 import { adminUsersAPI, adminFacultiesAPI } from "../../../lib/adminApi";
 import { FiEdit, FiTrash2, FiPlus, FiSearch, FiX } from "react-icons/fi";
+import toast from "react-hot-toast";
 
 export default function CMSUsersPage() {
   const [users, setUsers] = useState([]);
@@ -90,7 +91,7 @@ export default function CMSUsersPage() {
       await adminUsersAPI.delete(id);
       fetchUsers();
     } catch (error) {
-      alert("ไม่สามารถลบผู้ใช้ได้");
+      toast.error("ไม่สามารถลบผู้ใช้ได้");
     }
   };
 
@@ -106,7 +107,7 @@ export default function CMSUsersPage() {
       setShowModal(false);
       fetchUsers();
     } catch (error) {
-      alert(error.response?.data?.error || "เกิดข้อผิดพลาด");
+      toast.error(error.response?.data?.error || "เกิดข้อผิดพลาด");
     }
   };
 

@@ -1,11 +1,93 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseBooksAPI } from "../../../lib/professorApi";
-import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi";
+import toast from "react-hot-toast";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
+
+// Memoized BookCard component to prevent unnecessary re-renders
+const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false }) => (
+  <div className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'}`}>
+    <div className="flex gap-4">
+      <div className="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
+        {isAdminRecommended && (
+          <div className="absolute top-1 left-1 z-10 p-1 bg-amber-500 rounded-full">
+            <FiStar className="text-white text-xs" />
+          </div>
+        )}
+        {book.bookcover ? (
+          <img
+            src={book.bookcover}
+            alt={book.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div className={`w-full h-full ${book.bookcover ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-100`}>
+          <FiBook className="text-3xl text-emerald-400" />
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2">
+          <h4 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1 flex-1">{book.title}</h4>
+          {isAdminRecommended && (
+            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+              <FiStar className="text-amber-500 text-xs" />
+              Admin
+            </span>
+          )}
+        </div>
+        {book.author && (
+          <p className="text-xs text-gray-500 mb-1">โดย {book.author}</p>
+        )}
+        {book.callnumber && (
+          <p className="text-xs text-emerald-600 font-medium mb-1">เลขเรียก: {book.callnumber}</p>
+        )}
+        {book.publisher && (
+          <p className="text-xs text-gray-400 line-clamp-1">{book.publisher}</p>
+        )}
+        <div className="mt-2 flex gap-2">
+          {showAddButton && !isAdded && (
+            <button
+              onClick={() => onAdd(book)}
+              disabled={isAdding}
+              className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs rounded-lg hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50"
+            >
+              {isAdding ? (
+                <FiLoader className="animate-spin" />
+              ) : (
+                <FiPlus />
+              )}
+              เพิ่มในรายวิชา
+            </button>
+          )}
+          {showAddButton && isAdded && (
+            <span className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs rounded-lg">
+              เพิ่มแล้ว
+            </span>
+          )}
+          {showRemoveButton && (
+            <button
+              onClick={() => onRemove(book.id)}
+              className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100 transition-all flex items-center gap-1"
+            >
+              <FiTrash2 />
+              ลบออก
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+));
+
+BookCard.displayName = 'BookCard';
 
 export default function CourseBooksPage() {
   const [courses, setCourses] = useState([]);
@@ -93,18 +175,59 @@ export default function CourseBooksPage() {
       setKeywords(response.data.keywords || []);
     } catch (error) {
       console.error("Error refreshing suggestions:", error);
-      alert("ไม่สามารถรีเฟรชหนังสือแนะนำได้");
+      toast.error("ไม่สามารถรีเฟรชหนังสือแนะนำได้");
     } finally {
       setLoadingSuggestions(false);
     }
   };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(suggestedBooks.length / ITEMS_PER_PAGE);
-  const paginatedBooks = suggestedBooks.slice(
+  // Memoized pagination calculations
+  const totalPages = useMemo(() => Math.ceil(suggestedBooks.length / ITEMS_PER_PAGE), [suggestedBooks.length]);
+  const paginatedBooks = useMemo(() => suggestedBooks.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
-  );
+  ), [suggestedBooks, currentPage]);
+
+  // Memoized set for quick lookup of added books
+  const addedBookIds = useMemo(() => new Set(courseBooks.map(cb => cb.book_id)), [courseBooks]);
+
+  // Memoized callbacks to prevent re-renders
+  const isBookAdded = useCallback((bookId) => addedBookIds.has(bookId), [addedBookIds]);
+
+  const handleAddBook = useCallback(async (book) => {
+    if (!selectedCourse) return;
+
+    try {
+      setAddingBook(book.id);
+      await professorCourseBooksAPI.addBookToCourse(selectedCourse.id, {
+        book_id: book.id,
+        title: book.title,
+        author: book.author,
+        publisher: book.publisher,
+        callnumber: book.callnumber,
+        isbn: book.isbn,
+        bookcover: book.bookcover
+      });
+      fetchCourseBooks();
+      toast.success("เพิ่มหนังสือในรายวิชาเรียบร้อยแล้ว");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "ไม่สามารถเพิ่มหนังสือได้");
+    } finally {
+      setAddingBook(null);
+    }
+  }, [selectedCourse]);
+
+  const handleRemoveBook = useCallback(async (bookId) => {
+    if (!selectedCourse) return;
+    if (!confirm("ต้องการลบหนังสือออกจากรายวิชานี้หรือไม่?")) return;
+
+    try {
+      await professorCourseBooksAPI.removeBookFromCourse(selectedCourse.id, bookId);
+      fetchCourseBooks();
+    } catch (error) {
+      toast.error(error.response?.data?.error || "ไม่สามารถลบหนังสือได้");
+    }
+  }, [selectedCourse]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -121,110 +244,6 @@ export default function CourseBooksPage() {
       setLoadingSearch(false);
     }
   };
-
-  const handleAddBook = async (book) => {
-    if (!selectedCourse) return;
-
-    try {
-      setAddingBook(book.id);
-      await professorCourseBooksAPI.addBookToCourse(selectedCourse.id, {
-        book_id: book.id,
-        title: book.title,
-        author: book.author,
-        publisher: book.publisher,
-        callnumber: book.callnumber,
-        isbn: book.isbn,
-        bookcover: book.bookcover
-      });
-      fetchCourseBooks();
-      alert("เพิ่มหนังสือในรายวิชาเรียบร้อยแล้ว");
-    } catch (error) {
-      alert(error.response?.data?.error || "ไม่สามารถเพิ่มหนังสือได้");
-    } finally {
-      setAddingBook(null);
-    }
-  };
-
-  const handleRemoveBook = async (bookId) => {
-    if (!selectedCourse) return;
-    if (!confirm("ต้องการลบหนังสือออกจากรายวิชานี้หรือไม่?")) return;
-
-    try {
-      await professorCourseBooksAPI.removeBookFromCourse(selectedCourse.id, bookId);
-      fetchCourseBooks();
-    } catch (error) {
-      alert(error.response?.data?.error || "ไม่สามารถลบหนังสือได้");
-    }
-  };
-
-  const isBookAdded = (bookId) => {
-    return courseBooks.some(cb => cb.book_id === bookId);
-  };
-
-  const BookCard = ({ book, showAddButton = true, showRemoveButton = false, onRemove }) => (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-4">
-      <div className="flex gap-4">
-        <div className="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-          {book.bookcover ? (
-            <img
-              src={book.bookcover}
-              alt={book.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div className={`w-full h-full ${book.bookcover ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-100`}>
-            <FiBook className="text-3xl text-emerald-400" />
-          </div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1">{book.title}</h4>
-          {book.author && (
-            <p className="text-xs text-gray-500 mb-1">โดย {book.author}</p>
-          )}
-          {book.callnumber && (
-            <p className="text-xs text-emerald-600 font-medium mb-1">เลขเรียก: {book.callnumber}</p>
-          )}
-          {book.publisher && (
-            <p className="text-xs text-gray-400 line-clamp-1">{book.publisher}</p>
-          )}
-          <div className="mt-2 flex gap-2">
-            {showAddButton && !isBookAdded(book.id) && (
-              <button
-                onClick={() => handleAddBook(book)}
-                disabled={addingBook === book.id}
-                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs rounded-lg hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50"
-              >
-                {addingBook === book.id ? (
-                  <FiLoader className="animate-spin" />
-                ) : (
-                  <FiPlus />
-                )}
-                เพิ่มในรายวิชา
-              </button>
-            )}
-            {showAddButton && isBookAdded(book.id) && (
-              <span className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs rounded-lg">
-                เพิ่มแล้ว
-              </span>
-            )}
-            {showRemoveButton && (
-              <button
-                onClick={() => onRemove(book.id)}
-                className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100 transition-all flex items-center gap-1"
-              >
-                <FiTrash2 />
-                ลบออก
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -295,11 +314,122 @@ export default function CourseBooksPage() {
         </div>
 
         {selectedCourse && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - Search & Suggestions */}
-            <div className="space-y-6">
+          <div className="space-y-6">
+            {/* AI Suggestions Section - Full Width & Prominent */}
+            <div className="bg-gradient-to-br from-purple-50 via-white to-violet-50 rounded-2xl shadow-lg border-2 border-purple-200 p-8 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-200/20 to-violet-200/20 rounded-full blur-3xl -z-0"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-fuchsia-200/20 to-purple-200/20 rounded-full blur-3xl -z-0"></div>
+              
+              <div className="relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl shadow-lg">
+                      <FiZap className="text-2xl text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                        แนะนำหนังสือจาก AI
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        ระบบค้นหาหนังสืออัตโนมัติที่เหมาะสมกับรายวิชา ({suggestedBooks.length} เล่ม)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRefreshSuggestions}
+                    disabled={loadingSuggestions}
+                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2 font-medium"
+                  >
+                    {loadingSuggestions ? (
+                      <>
+                        <FiLoader className="animate-spin" />
+                        กำลังโหลด...
+                      </>
+                    ) : (
+                      <>
+                        <FiZap />
+                        ดึงข้อมูลใหม่จาก API
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {keywords.length > 0 && (
+                  <div className="mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-purple-100">
+                    <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                      คำสำคัญที่ใช้ค้นหา:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {keywords.map((kw, idx) => (
+                        <span key={idx} className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 text-sm font-medium rounded-full border border-purple-200">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {loadingSuggestions ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <FiLoader className="animate-spin text-4xl text-purple-500 mb-4" />
+                    <p className="text-gray-600">กำลังค้นหาหนังสือที่เหมาะสม...</p>
+                  </div>
+                ) : suggestedBooks.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FiBook className="text-3xl text-purple-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-2">ไม่พบหนังสือที่แนะนำ</p>
+                    <p className="text-sm text-gray-400">ลองกดปุ่ม "ดึงข้อมูลใหม่จาก API" เพื่อค้นหาหนังสือที่เหมาะสม</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {paginatedBooks.map((book) => (
+                        <BookCard 
+                          key={book.id} 
+                          book={book} 
+                          isAdminRecommended={book.admin_recommended}
+                          onAdd={handleAddBook}
+                          isAdded={isBookAdded(book.id)}
+                          isAdding={addingBook === book.id}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 mt-6 pt-6 border-t-2 border-purple-100">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="p-2.5 rounded-xl bg-white border-2 border-purple-200 text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 hover:border-purple-300 transition-all shadow-sm"
+                        >
+                          <FiChevronLeft className="text-lg" />
+                        </button>
+                        <span className="text-sm font-medium text-gray-700 px-4 py-2 bg-white rounded-xl border border-purple-100">
+                          หน้า {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="p-2.5 rounded-xl bg-white border-2 border-purple-200 text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 hover:border-purple-300 transition-all shadow-sm"
+                        >
+                          <FiChevronRight className="text-lg" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Search & Course Books - Two Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Search Section */}
-              <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-xl shadow-md border border-blue-100/50 p-6">
+              <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-xl shadow-md border border-blue-100/50 p-6 flex flex-col h-[600px]">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <FiSearch className="text-blue-600" />
                   ค้นหาหนังสือ {searchResults.length > 0 && `(${searchResults.length})`}
@@ -320,100 +450,44 @@ export default function CourseBooksPage() {
                     {loadingSearch ? <FiLoader className="animate-spin" /> : <FiSearch />}
                   </button>
                 </form>
-                {searchResults.length > 0 && (
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                    {searchResults.map((book) => (
-                      <BookCard key={book.id} book={book} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* AI Suggestions Section */}
-              <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-xl shadow-md border border-purple-100/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <FiZap className="text-purple-600" />
-                    แนะนำหนังสือจาก AI ({suggestedBooks.length})
-                  </h2>
-                  <button
-                    onClick={handleRefreshSuggestions}
-                    disabled={loadingSuggestions}
-                    className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-all disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {loadingSuggestions ? <FiLoader className="animate-spin" /> : "ดึงข้อมูลใหม่จาก API"}
-                  </button>
-                </div>
-
-                {keywords.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-500 mb-2">คำสำคัญที่ใช้ค้นหา:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {keywords.map((kw, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {loadingSuggestions ? (
-                  <div className="flex justify-center py-8">
-                    <FiLoader className="animate-spin text-2xl text-purple-500" />
-                  </div>
-                ) : suggestedBooks.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">ไม่พบหนังสือที่แนะนำ</p>
-                ) : (
-                  <>
+                <div className="flex-1 overflow-y-auto bg-blue-50/30 rounded-lg p-3 -mx-1">
+                  {searchResults.length > 0 ? (
                     <div className="space-y-3">
-                      {paginatedBooks.map((book) => (
-                        <BookCard key={book.id} book={book} />
+                      {searchResults.map((book) => (
+                        <BookCard 
+                          key={book.id} 
+                          book={book}
+                          onAdd={handleAddBook}
+                          isAdded={isBookAdded(book.id)}
+                          isAdding={addingBook === book.id}
+                        />
                       ))}
                     </div>
-                    
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-purple-100">
-                        <button
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                          className="p-2 rounded-lg bg-purple-100 text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-200 transition-all"
-                        >
-                          <FiChevronLeft />
-                        </button>
-                        <span className="text-sm text-gray-600 px-3">
-                          หน้า {currentPage} / {totalPages}
-                        </span>
-                        <button
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          disabled={currentPage === totalPages}
-                          className="p-2 rounded-lg bg-purple-100 text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-200 transition-all"
-                        >
-                          <FiChevronRight />
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      พิมพ์คำค้นหาเพื่อค้นหาหนังสือ
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Right Column - Course Books */}
-            <div>
-              <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow-md border border-emerald-100/50 p-6">
+              {/* Course Books */}
+              <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow-md border border-emerald-100/50 p-6 flex flex-col h-[600px]">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <FiBook className="text-emerald-600" />
                   หนังสือในรายวิชา ({courseBooks.length})
                 </h2>
-                {loadingCourseBooks ? (
-                  <div className="flex justify-center py-8">
-                    <FiLoader className="animate-spin text-2xl text-emerald-500" />
-                  </div>
-                ) : courseBooks.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">ยังไม่มีหนังสือในรายวิชานี้</p>
-                ) : (
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                <div className="flex-1 overflow-y-auto bg-emerald-50/30 rounded-lg p-3 -mx-1">
+                  {loadingCourseBooks ? (
+                    <div className="flex justify-center items-center h-full">
+                      <FiLoader className="animate-spin text-2xl text-emerald-500" />
+                    </div>
+                  ) : courseBooks.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      ยังไม่มีหนังสือในรายวิชานี้
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
                     {courseBooks.map((book) => (
                       <BookCard
                         key={book.id}
@@ -430,8 +504,9 @@ export default function CourseBooksPage() {
                         onRemove={() => handleRemoveBook(book.id)}
                       />
                     ))}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

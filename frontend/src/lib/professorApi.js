@@ -44,10 +44,21 @@ export const professorAuthAPI = {
 // Professor Course Registration APIs
 export const professorCourseRegistrationAPI = {
   getAll: () => professorApi.get('/api/professor/course-registration'),
-  getCurriculums: () => professorApi.get('/api/professor/course-registration/curriculums'),
+  getFaculties: () => professorApi.get('/api/professor/course-registration/faculties'),
+  getCurriculums: (facultyId) => professorApi.get('/api/professor/course-registration/curriculums', { params: { faculty_id: facultyId } }),
   create: (data) => professorApi.post('/api/professor/course-registration', data),
   update: (id, data) => professorApi.put(`/api/professor/course-registration/${id}`, data),
   delete: (id) => professorApi.delete(`/api/professor/course-registration/${id}`),
+  // File operations
+  getFiles: (courseId) => professorApi.get(`/api/professor/course-registration/${courseId}/files`),
+  uploadFile: (courseId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return professorApi.post(`/api/professor/course-registration/${courseId}/files`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteFile: (courseId, fileId) => professorApi.delete(`/api/professor/course-registration/${courseId}/files/${fileId}`),
 };
 
 // Professor Course Books APIs
