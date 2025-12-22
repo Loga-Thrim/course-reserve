@@ -1,26 +1,10 @@
 const pool = require('../config/db');
-const axios = require('axios');
-const https = require('https');
-
-const LIBRARY_API_URL = 'https://library.psru.ac.th/portal/lib_api/bookKeyword';
-const LIBRARY_API_TOKEN = '12b5381c97af8dfce39652300b81db5e';
-
-// Create axios instance that ignores SSL certificate errors
-const libraryApi = axios.create({
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false
-  })
-});
+const { psruAxios, PSRU_ENDPOINTS } = require('../config/psruApi');
 
 // Search books from library API
 const searchLibraryBooks = async (keyword) => {
   try {
-    const response = await libraryApi.get(`${LIBRARY_API_URL}/${encodeURIComponent(keyword)}`, {
-      headers: {
-        'token': LIBRARY_API_TOKEN
-      },
-      timeout: 10000
-    });
+    const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
 
     if (response.data?.status === '200' && response.data?.message?.Display) {
       return response.data.message.Display;

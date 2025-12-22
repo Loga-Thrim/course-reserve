@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { professorAuthAPI } from "../../../lib/professorApi";
-import { FiLock, FiMail, FiBook } from "react-icons/fi";
+import { FiLock, FiUser, FiBook } from "react-icons/fi";
 
 export default function ProfessorLoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,8 @@ export default function ProfessorLoginPage() {
     
     if (token && user) {
       const parsedUser = JSON.parse(user);
-      if (parsedUser.role === "professor") {
+      // Allow both professor and admin roles
+      if (parsedUser.role === "professor" || parsedUser.role === "admin") {
         router.push("/professor/dashboard");
       }
     }
@@ -31,11 +32,27 @@ export default function ProfessorLoginPage() {
     setLoading(true);
 
     try {
-      const response = await professorAuthAPI.login({ email, password });
+      let response;
+      let isAdminLogin = false;
+
+      // Try PSRU login first (for professors)
+      try {
+        response = await professorAuthAPI.psruLogin({ username, password });
+      } catch (psruError) {
+        // If PSRU fails, try self-auth (for admin using email/password)
+        // Check if username looks like an email
+        if (username.includes("@")) {
+          response = await professorAuthAPI.selfLogin({ email: username, password });
+          isAdminLogin = true;
+        } else {
+          throw psruError; // Re-throw if not an email
+        }
+      }
+
       const { token, user } = response.data;
 
-      // Check if user is professor
-      if (user.role !== "professor") {
+      // Check if user is professor or admin
+      if (user.role !== "professor" && user.role !== "admin") {
         setError("คุณไม่มีสิทธิ์เข้าถึงระบบอาจารย์");
         setLoading(false);
         return;
@@ -80,19 +97,19 @@ export default function ProfessorLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                อีเมล
+                รหัสอาจารย์ / อีเมล
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-gray-400" />
+                  <FiUser className="text-gray-400" />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="input-field pl-10 w-full"
-                  placeholder="professor@example.com"
+                  placeholder="รหัสอาจารย์ หรือ อีเมล"
                 />
               </div>
             </div>
@@ -127,7 +144,8 @@ export default function ProfessorLoginPage() {
 
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
             <p className="text-sm text-gray-600">
-              สำหรับอาจารย์เท่านั้น
+              อาจารย์: ใช้รหัสอาจารย์จากระบบห้องสมุด<br />
+              ผู้ดูแล: ใช้อีเมลและรหัสผ่าน
             </p>
           </div>
         </div>

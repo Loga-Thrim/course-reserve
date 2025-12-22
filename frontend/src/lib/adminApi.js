@@ -74,4 +74,24 @@ export const adminCourseBooksAPI = {
   removeRecommendedBook: (courseId, bookId) => adminApi.delete(`/api/admin/course-books/${courseId}/${bookId}`),
 };
 
+// Admin Reports APIs
+export const adminReportsAPI = {
+  getOverview: () => adminApi.get('/api/admin/reports/overview'),
+  getByFaculty: () => adminApi.get('/api/admin/reports/faculty'),
+  getByCurriculum: (params) => adminApi.get('/api/admin/reports/curriculum', { params }),
+  getCourses: (params) => adminApi.get('/api/admin/reports/courses', { params }),
+  getBooks: (params) => adminApi.get('/api/admin/reports/books', { params }),
+  getExportData: (type) => adminApi.get('/api/admin/reports/export', { params: { type } }),
+};
+
+// Admin Activity Logs APIs
+export const adminActivityLogsAPI = {
+  getLogs: (params) => adminApi.get('/api/admin/activity-logs', { params }),
+  getStats: (params) => adminApi.get('/api/admin/activity-logs/stats', { params }),
+  getFilterOptions: () => adminApi.get('/api/admin/activity-logs/filters'),
+  exportLogs: (params) => adminApi.get('/api/admin/activity-logs/export', { params }),
+  getStudentReport: () => adminApi.get('/api/admin/activity-logs/student-report'),
+  getProfessorReport: () => adminApi.get('/api/admin/activity-logs/professor-report'),
+};
+
 export default adminApi;

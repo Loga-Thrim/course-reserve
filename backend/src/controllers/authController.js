@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const pool = require('../config/db');
+const { psruAxios, PSRU_ENDPOINTS, PSRU_API_TOKEN } = require('../config/psruApi');
+const activityLogger = require('../services/activityLogger');
 
 const authController = {
   register: async (req, res) => {
@@ -106,19 +108,223 @@ const authController = {
     }
   },
 
-  // Get current user
-  getCurrentUser: async (req, res) => {
+  // PSRU External Authentication for Student
+  psruStudentLogin: async (req, res) => {
     try {
-      const user = await pool.query(
-        'SELECT id, email, name, created_at FROM users WHERE id = $1',
-        [req.user.userId]
-      );
+      const { username, password } = req.body;
 
-      if (user.rows.length === 0) {
-        return res.status(404).json({ error: 'User not found' });
+      if (!username || !password) {
+        return res.status(400).json({ error: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน' });
       }
 
-      res.json(user.rows[0]);
+      // Call PSRU API
+      const psruResponse = await psruAxios.post(PSRU_ENDPOINTS.AUTH, {
+        username,
+        password
+      });
+
+      const data = psruResponse.data;
+
+      if (data.status !== '200' || !data.message || data.message.length === 0) {
+        return res.status(401).json({ error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+      }
+
+      const userData = data.message[0];
+
+      // Check if user is student (PTTYPEID = 3)
+      if (userData.PTTYPEID !== '3') {
+        return res.status(403).json({ error: 'บัญชีนี้ไม่ใช่บัญชีนักศึกษา กรุณาใช้ระบบสำหรับอาจารย์' });
+      }
+
+      // Check if membership is expired (EXPIREDATE format: YYYYMMDD in Buddhist year)
+      if (userData.EXPIREDATE) {
+        const expireDateStr = userData.EXPIREDATE;
+        // Convert Buddhist year to Gregorian (subtract 543)
+        const buddhistYear = parseInt(expireDateStr.substring(0, 4));
+        const gregorianYear = buddhistYear - 543;
+        const month = parseInt(expireDateStr.substring(4, 6)) - 1; // 0-indexed
+        const day = parseInt(expireDateStr.substring(6, 8));
+        const expireDate = new Date(gregorianYear, month, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (expireDate < today) {
+          return res.status(403).json({ error: 'สถานะการเป็นสมาชิกหมดอายุ กรุณาติดต่อห้องสมุดเพื่อดำเนินการต่ออายุสมาชิก' });
+        }
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: userData.USERID,
+          memberId: userData.MEMBERID,
+          barcode: userData.BARCODE,
+          name: `${userData.FNAMETHAI} ${userData.LNAMETHAI}`,
+          role: 'student',
+          faculty: userData.FACULTYNAME,
+          program: userData.PROGRAMNAME,
+          memberType: userData.MEMBERTYPE
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      const userInfo = {
+        id: userData.USERID,
+        memberId: userData.MEMBERID,
+        barcode: userData.BARCODE,
+        name: `${userData.FNAMETHAI} ${userData.LNAMETHAI}`,
+        firstName: userData.FNAMETHAI,
+        lastName: userData.LNAMETHAI,
+        role: 'student',
+        faculty: userData.FACULTYNAME,
+        program: userData.PROGRAMNAME,
+        memberType: userData.MEMBERTYPE,
+        profilePic: userData.PATHPIC
+      };
+
+      // Log login activity
+      await activityLogger.logLogin(
+        { 
+          id: userData.USERID, 
+          name: userInfo.name, 
+          email: userData.BARCODE,
+          faculty: userData.FACULTYNAME,
+          program: userData.PROGRAMNAME
+        },
+        'student',
+        req
+      );
+
+      res.json({
+        message: 'เข้าสู่ระบบสำเร็จ',
+        token,
+        user: userInfo
+      });
+    } catch (error) {
+      console.error('PSRU Student Login error:', error.response?.data || error.message);
+      if (error.response?.status === 401 || error.response?.status === 400) {
+        return res.status(401).json({ error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+      }
+      res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเชื่อมต่อระบบ' });
+    }
+  },
+
+  // PSRU External Authentication for Professor
+  psruProfessorLogin: async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: 'กรุณากรอกรหัสอาจารย์และรหัสผ่าน' });
+      }
+
+      // Call PSRU API
+      const psruResponse = await psruAxios.post(PSRU_ENDPOINTS.AUTH, {
+        username,
+        password
+      });
+
+      const data = psruResponse.data;
+
+      if (data.status !== '200' || !data.message || data.message.length === 0) {
+        return res.status(401).json({ error: 'รหัสอาจารย์หรือรหัสผ่านไม่ถูกต้อง' });
+      }
+
+      const userData = data.message[0];
+
+      // Check if user is professor (PTTYPEID = 1)
+      if (userData.PTTYPEID !== '1') {
+        return res.status(403).json({ error: 'บัญชีนี้ไม่ใช่บัญชีอาจารย์ กรุณาใช้ระบบสำหรับนักศึกษา' });
+      }
+
+      // Check if membership is expired (EXPIREDATE format: YYYYMMDD in Buddhist year)
+      if (userData.EXPIREDATE) {
+        const expireDateStr = userData.EXPIREDATE;
+        // Convert Buddhist year to Gregorian (subtract 543)
+        const buddhistYear = parseInt(expireDateStr.substring(0, 4));
+        const gregorianYear = buddhistYear - 543;
+        const month = parseInt(expireDateStr.substring(4, 6)) - 1; // 0-indexed
+        const day = parseInt(expireDateStr.substring(6, 8));
+        const expireDate = new Date(gregorianYear, month, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (expireDate < today) {
+          return res.status(403).json({ error: 'สถานะการเป็นสมาชิกหมดอายุ กรุณาติดต่อห้องสมุดเพื่อดำเนินการต่ออายุสมาชิก' });
+        }
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: userData.USERID,
+          memberId: userData.MEMBERID,
+          barcode: userData.BARCODE,
+          name: `${userData.FNAMETHAI} ${userData.LNAMETHAI}`,
+          role: 'professor',
+          faculty: userData.FACULTYNAME,
+          program: userData.PROGRAMNAME,
+          memberType: userData.MEMBERTYPE
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      const userInfo = {
+        id: userData.USERID,
+        memberId: userData.MEMBERID,
+        barcode: userData.BARCODE,
+        name: `${userData.FNAMETHAI} ${userData.LNAMETHAI}`,
+        firstName: userData.FNAMETHAI,
+        lastName: userData.LNAMETHAI,
+        role: 'professor',
+        faculty: userData.FACULTYNAME,
+        program: userData.PROGRAMNAME,
+        memberType: userData.MEMBERTYPE,
+        profilePic: userData.PATHPIC
+      };
+
+      // Log login activity
+      await activityLogger.logLogin(
+        { 
+          id: userData.USERID, 
+          name: userInfo.name, 
+          email: userData.BARCODE,
+          faculty: userData.FACULTYNAME,
+          program: userData.PROGRAMNAME
+        },
+        'professor',
+        req
+      );
+
+      res.json({
+        message: 'เข้าสู่ระบบสำเร็จ',
+        token,
+        user: userInfo
+      });
+    } catch (error) {
+      console.error('PSRU Professor Login error:', error);
+      if (error.response?.status === 401 || error.response?.status === 400) {
+        return res.status(401).json({ error: 'รหัสอาจารย์หรือรหัสผ่านไม่ถูกต้อง' });
+      }
+      res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเชื่อมต่อระบบ' });
+    }
+  },
+
+  // Get current user (from JWT token)
+  getCurrentUser: async (req, res) => {
+    try {
+      // Return user info from JWT token (set by auth middleware)
+      res.json({
+        id: req.user.userId,
+        barcode: req.user.barcode,
+        name: req.user.name,
+        role: req.user.role,
+        faculty: req.user.faculty,
+        program: req.user.program,
+        memberType: req.user.memberType
+      });
     } catch (error) {
       console.error('Get user error:', error);
       res.status(500).json({ error: 'Server error' });

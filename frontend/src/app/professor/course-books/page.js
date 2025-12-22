@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, memo } from "react";
+import { useSearchParams } from "next/navigation";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseBooksAPI } from "../../../lib/professorApi";
 import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi";
@@ -90,6 +91,7 @@ const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, o
 BookCard.displayName = 'BookCard';
 
 export default function CourseBooksPage() {
+  const searchParams = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseBooks, setCourseBooks] = useState([]);
@@ -121,6 +123,18 @@ export default function CourseBooksPage() {
       setLoading(true);
       const response = await professorCourseBooksAPI.getMyCourses();
       setCourses(response.data);
+      
+      // Check if courseId is in URL params
+      const courseIdFromUrl = searchParams.get('courseId');
+      if (courseIdFromUrl) {
+        const targetCourse = response.data.find(c => c.id === parseInt(courseIdFromUrl));
+        if (targetCourse) {
+          setSelectedCourse(targetCourse);
+          return;
+        }
+      }
+      
+      // Default: select first course
       if (response.data.length > 0) {
         setSelectedCourse(response.data[0]);
       }
@@ -175,7 +189,7 @@ export default function CourseBooksPage() {
       setKeywords(response.data.keywords || []);
     } catch (error) {
       console.error("Error refreshing suggestions:", error);
-      toast.error("ไม่สามารถรีเฟรชหนังสือแนะนำได้");
+      toast.error("ไม่สามารถรีเฟรชหนังสือแนะนำได้ " + error.response?.data?.error);
     } finally {
       setLoadingSuggestions(false);
     }

@@ -29,4 +29,10 @@ router.post(
 // Get current user
 router.get('/me', authMiddleware, authController.getCurrentUser);
 
+// PSRU External Authentication - Student Login
+router.post('/psru/student', authController.psruStudentLogin);
+
+// PSRU External Authentication - Professor Login
+router.post('/psru/professor', authController.psruProfessorLogin);
+
 module.exports = router;

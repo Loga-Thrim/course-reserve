@@ -27,9 +27,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (username, password) => {
     try {
-      const response = await authAPI.login({ email, password });
+      const response = await authAPI.psruStudentLogin({ username, password });
       const { token, user } = response.data;
 
       localStorage.setItem("token", token);
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.error || "Login failed",
+        error: error.response?.data?.error || "เข้าสู่ระบบไม่สำเร็จ",
       };
     }
   };

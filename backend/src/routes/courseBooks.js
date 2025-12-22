@@ -10,4 +10,7 @@ router.get('/curriculums', authMiddleware, courseBooksController.getCurriculumsW
 // Get books by curriculum or course
 router.get('/books', authMiddleware, courseBooksController.getBooks);
 
+// Get course files for download
+router.get('/files/:courseId', authMiddleware, courseBooksController.getCourseFiles);
+
 module.exports = router;

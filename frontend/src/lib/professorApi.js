@@ -38,7 +38,15 @@ professorApi.interceptors.response.use(
 
 // Professor Auth APIs
 export const professorAuthAPI = {
-  login: (data) => axios.post(`${API_URL}/api/auth/login`, data),
+  // PSRU login for professors
+  psruLogin: (data) => axios.post(`${API_URL}/api/auth/psru/professor`, data),
+  // Self-auth login for admin
+  selfLogin: (data) => axios.post(`${API_URL}/api/auth/login`, data),
+};
+
+// Professor Dashboard APIs
+export const professorDashboardAPI = {
+  getStats: () => professorApi.get('/api/professor/dashboard/stats'),
 };
 
 // Professor Course Registration APIs

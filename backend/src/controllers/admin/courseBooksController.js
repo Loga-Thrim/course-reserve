@@ -1,26 +1,10 @@
 const pool = require('../../config/db');
-const axios = require('axios');
-const https = require('https');
-
-const LIBRARY_API_URL = 'https://library.psru.ac.th/portal/lib_api/bookKeyword';
-const LIBRARY_API_TOKEN = '12b5381c97af8dfce39652300b81db5e';
-
-// Create axios instance that ignores SSL certificate errors (for library API)
-const libraryApi = axios.create({
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false
-  })
-});
+const { psruAxios, PSRU_ENDPOINTS } = require('../../config/psruApi');
 
 // Search books from library API
 const searchLibraryBooks = async (keyword) => {
   try {
-    const response = await libraryApi.get(`${LIBRARY_API_URL}/${encodeURIComponent(keyword)}`, {
-      headers: {
-        'token': LIBRARY_API_TOKEN
-      },
-      timeout: 10000
-    });
+    const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
 
     if (response.data?.status === '200' && response.data?.message?.Display) {
       return response.data.message.Display;
@@ -74,9 +58,8 @@ const adminCourseBooksController = {
       const { courseId } = req.params;
 
       const result = await pool.query(
-        `SELECT crb.*, u.name as added_by_name
+        `SELECT crb.*
          FROM course_recommended_books crb
-         LEFT JOIN users u ON crb.added_by = u.id
          WHERE crb.course_id = $1
          ORDER BY crb.admin_recommended DESC, crb.created_at DESC`,
         [courseId]
@@ -125,7 +108,7 @@ const adminCourseBooksController = {
   addRecommendedBook: async (req, res) => {
     try {
       const { courseId } = req.params;
-      const adminId = req.user.userId;
+      const adminId = req.user.barcode;
       const { book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang } = req.body;
 
       // Check if course exists
@@ -197,7 +180,7 @@ const adminCourseBooksController = {
   toggleAdminRecommended: async (req, res) => {
     try {
       const { courseId, bookId } = req.params;
-      const adminId = req.user.userId;
+      const adminId = req.user.barcode;
 
       const result = await pool.query(
         `UPDATE course_recommended_books 

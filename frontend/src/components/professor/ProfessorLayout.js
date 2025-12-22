@@ -28,7 +28,8 @@ export default function ProfessorLayout({ children }) {
     }
 
     const parsedUser = JSON.parse(user);
-    if (parsedUser.role !== "professor") {
+    // Allow both professor and admin roles
+    if (parsedUser.role !== "professor" && parsedUser.role !== "admin") {
       router.push("/professor/login");
       return;
     }

@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
-import { FiBook, FiMail, FiLock } from "react-icons/fi";
+import { FiBook, FiUser, FiLock } from "react-icons/fi";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(username, password);
 
     if (result.success) {
       router.push("/");
@@ -72,24 +72,24 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                อีเมล
+                รหัสนักศึกษา
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-gray-400" />
+                  <FiUser className="text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="input-field pl-10"
-                  placeholder="you@example.com"
+                  placeholder="6212231018"
                 />
               </div>
             </div>
@@ -156,13 +156,7 @@ export default function LoginPage() {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              ยังไม่มีบัญชี?{" "}
-              <Link
-                href="/register"
-                className="font-medium text-emerald-600 hover:text-teal-600"
-              >
-                สมัครสมาชิก
-              </Link>
+              ใช้รหัสนักศึกษาและรหัสผ่านจากระบบห้องสมุด
             </p>
           </div>
         </form>

@@ -1,24 +1,33 @@
 const pool = require('../../config/db');
-const axios = require('axios');
-const https = require('https');
+const { psruAxios, PSRU_ENDPOINTS } = require('../../config/psruApi');
+const activityLogger = require('../../services/activityLogger');
 
-const LIBRARY_API_URL = 'https://library.psru.ac.th/portal/lib_api/bookKeyword';
-const LIBRARY_API_TOKEN = '12b5381c97af8dfce39652300b81db5e';
-
-const libraryApi = axios.create({
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false
-  })
-});
+// Helper function to check if user has access to a course
+const checkCourseAccess = async (courseId, user) => {
+  const isAdmin = user.role === 'admin';
+  
+  // Admin has access to all courses
+  if (isAdmin) {
+    const result = await pool.query('SELECT * FROM professor_courses WHERE id = $1', [courseId]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+  }
+  
+  // Professor: check by professor_id OR instructor name
+  const professorId = user.barcode || user.id; // barcode for PSRU auth, id for self-auth
+  const result = await pool.query(
+    `SELECT pc.* FROM professor_courses pc
+     LEFT JOIN course_instructors ci ON pc.id = ci.course_id
+     WHERE pc.id = $1 
+       AND (pc.professor_id = $2 OR LOWER(ci.instructor_name) LIKE LOWER($3))`,
+    [courseId, professorId, `%${user.name}%`]
+  );
+  
+  return result.rows.length > 0 ? result.rows[0] : null;
+};
 
 const searchLibraryBooks = async (keyword) => {
   try {
-    const response = await libraryApi.get(`${LIBRARY_API_URL}/${encodeURIComponent(keyword)}`, {
-      headers: {
-        'token': LIBRARY_API_TOKEN
-      },
-      timeout: 10000
-    });
+    const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
 
     if (response.data?.status === '200' && response.data?.message?.Display) {
       return response.data.message.Display;
@@ -31,32 +40,43 @@ const searchLibraryBooks = async (keyword) => {
 };
 
 const courseBooksController = {
-  // Get courses where user is creator OR instructor
+  // Get courses where user is creator OR instructor (admin sees all)
   getMyCourses: async (req, res) => {
     try {
-      const professorId = req.user.userId;
+      const professorId = req.user.barcode || req.user.userId || req.user.id; // barcode for PSRU auth, userId/id for self-auth
       const userName = req.user.name;
+      const isAdmin = req.user.role === 'admin';
 
-      const result = await pool.query(
-        `SELECT pc.*, 
-                COALESCE(
-                  json_agg(
-                    json_build_object('id', ci.id, 'instructor_name', ci.instructor_name)
-                  ) FILTER (WHERE ci.id IS NOT NULL), 
-                  '[]'
-                ) as instructors
-         FROM professor_courses pc
-         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE pc.professor_id = $1
-            OR EXISTS (
-              SELECT 1 FROM course_instructors ci2 
-              WHERE ci2.course_id = pc.id 
-              AND LOWER(ci2.instructor_name) LIKE LOWER($2)
-            )
-         GROUP BY pc.id
-         ORDER BY pc.created_at DESC`,
-        [professorId, `%${userName}%`]
-      );
+      let query = `
+        SELECT pc.*, 
+               COALESCE(
+                 json_agg(
+                   json_build_object('id', ci.id, 'instructor_name', ci.instructor_name)
+                 ) FILTER (WHERE ci.id IS NOT NULL), 
+                 '[]'
+               ) as instructors
+        FROM professor_courses pc
+        LEFT JOIN course_instructors ci ON pc.id = ci.course_id
+      `;
+      
+      let params = [];
+      
+      // Admin sees all courses, professor sees only their own
+      if (!isAdmin) {
+        query += `
+          WHERE pc.professor_id = $1
+             OR EXISTS (
+               SELECT 1 FROM course_instructors ci2 
+               WHERE ci2.course_id = pc.id 
+               AND LOWER(ci2.instructor_name) LIKE LOWER($2)
+             )
+        `;
+        params = [professorId, `%${userName}%`];
+      }
+      
+      query += ` GROUP BY pc.id ORDER BY pc.created_at DESC`;
+      
+      const result = await pool.query(query, params);
 
       res.json(result.rows);
     } catch (error) {
@@ -69,22 +89,12 @@ const courseBooksController = {
   getBookSuggestions: async (req, res) => {
     try {
       const { courseId } = req.params;
-      const userName = req.user.name;
 
-      // Check if user is instructor of this course and get course details
-      const courseCheck = await pool.query(
-        `SELECT pc.id, pc.keywords FROM professor_courses pc
-         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE pc.id = $1 
-           AND LOWER(ci.instructor_name) LIKE LOWER($2)`,
-        [courseId, `%${userName}%`]
-      );
-
-      if (courseCheck.rows.length === 0) {
+      // Check if user has access to this course (admin or owner/instructor)
+      const course = await checkCourseAccess(courseId, req.user);
+      if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายวิชานี้' });
       }
-
-      const course = courseCheck.rows[0];
 
       // Get recommended books from database (admin recommended first)
       const result = await pool.query(
@@ -113,22 +123,12 @@ const courseBooksController = {
   refreshBookSuggestions: async (req, res) => {
     try {
       const { courseId } = req.params;
-      const userName = req.user.name;
 
-      // Check if user is instructor of this course
-      const courseCheck = await pool.query(
-        `SELECT pc.* FROM professor_courses pc
-         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE pc.id = $1 
-           AND LOWER(ci.instructor_name) LIKE LOWER($2)`,
-        [courseId, `%${userName}%`]
-      );
-
-      if (courseCheck.rows.length === 0) {
+      // Check if user has access to this course (admin or owner/instructor)
+      const course = await checkCourseAccess(courseId, req.user);
+      if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายวิชานี้' });
       }
-
-      const course = courseCheck.rows[0];
 
       // Use keywords from course only
       const { fetchAndStoreRecommendedBooks } = require('../../services/bookRecommendationService');
@@ -193,9 +193,8 @@ const courseBooksController = {
       const { courseId } = req.params;
 
       const result = await pool.query(
-        `SELECT cb.*, u.name as added_by_name
+        `SELECT cb.*
          FROM course_books cb
-         LEFT JOIN users u ON cb.added_by = u.id
          WHERE cb.course_id = $1
          ORDER BY cb.created_at DESC`,
         [courseId]
@@ -212,20 +211,11 @@ const courseBooksController = {
   addBookToCourse: async (req, res) => {
     try {
       const { courseId } = req.params;
-      const professorId = req.user.userId;
-      const userName = req.user.name;
       const { book_id, title, author, publisher, callnumber, isbn, bookcover } = req.body;
 
-      // Check if user is instructor of this course
-      const courseCheck = await pool.query(
-        `SELECT pc.id FROM professor_courses pc
-         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE pc.id = $1 
-           AND (pc.professor_id = $2 OR LOWER(ci.instructor_name) LIKE LOWER($3))`,
-        [courseId, professorId, `%${userName}%`]
-      );
-
-      if (courseCheck.rows.length === 0) {
+      // Check if user has access to this course (admin or owner/instructor)
+      const course = await checkCourseAccess(courseId, req.user);
+      if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เพิ่มหนังสือในรายวิชานี้' });
       }
 
@@ -243,7 +233,18 @@ const courseBooksController = {
         `INSERT INTO course_books (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, added_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
-        [courseId, book_id, title, author, publisher, callnumber, isbn, bookcover, professorId]
+        [courseId, book_id, title, author, publisher, callnumber, isbn, bookcover, req.user.barcode]
+      );
+
+      // Log activity
+      await activityLogger.logCreate(
+        { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
+        'professor',
+        'book',
+        result.rows[0].id,
+        title,
+        { courseId, courseName: course.name_th, bookId: book_id },
+        req
       );
 
       res.status(201).json(result.rows[0]);
@@ -257,19 +258,10 @@ const courseBooksController = {
   removeBookFromCourse: async (req, res) => {
     try {
       const { courseId, bookId } = req.params;
-      const professorId = req.user.userId;
-      const userName = req.user.name;
 
-      // Check if user is instructor of this course
-      const courseCheck = await pool.query(
-        `SELECT pc.id FROM professor_courses pc
-         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
-         WHERE pc.id = $1 
-           AND (pc.professor_id = $2 OR LOWER(ci.instructor_name) LIKE LOWER($3))`,
-        [courseId, professorId, `%${userName}%`]
-      );
-
-      if (courseCheck.rows.length === 0) {
+      // Check if user has access to this course (admin or owner/instructor)
+      const course = await checkCourseAccess(courseId, req.user);
+      if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์ลบหนังสือจากรายวิชานี้' });
       }
 
@@ -281,6 +273,17 @@ const courseBooksController = {
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'ไม่พบหนังสือที่ต้องการลบ' });
       }
+
+      // Log activity
+      await activityLogger.logDelete(
+        { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
+        'professor',
+        'book',
+        parseInt(bookId),
+        result.rows[0].title,
+        { courseId, courseName: course.name_th },
+        req
+      );
 
       res.json({ message: 'ลบหนังสือออกจากรายวิชาเรียบร้อยแล้ว' });
     } catch (error) {

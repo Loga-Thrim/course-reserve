@@ -10,9 +10,9 @@ const professorAuth = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Check if user has professor role
-    if (decoded.role !== 'professor') {
-      return res.status(403).json({ error: 'Access denied. Professor privileges required.' });
+    // Check if user has professor or admin role
+    if (decoded.role !== 'professor' && decoded.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Professor or Admin privileges required.' });
     }
 
     req.user = decoded;

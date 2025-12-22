@@ -8,6 +8,9 @@ const upload = require('../middleware/fileUpload');
 // All routes require professor authentication
 router.use(professorAuth);
 
+// Dashboard stats
+router.get('/dashboard/stats', professorCourseRegistrationController.getDashboardStats);
+
 // Course Registration routes (professors can manage their own courses)
 router.get('/course-registration/faculties', professorCourseRegistrationController.getFaculties);
 router.get('/course-registration/curriculums', professorCourseRegistrationController.getCurriculums);
