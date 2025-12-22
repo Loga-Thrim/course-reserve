@@ -9,7 +9,6 @@ const professorApi = axios.create({
   },
 });
 
-// Add token to requests
 professorApi.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('professorToken');
@@ -23,7 +22,6 @@ professorApi.interceptors.request.use(
   }
 );
 
-// Handle response errors
 professorApi.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,20 +34,15 @@ professorApi.interceptors.response.use(
   }
 );
 
-// Professor Auth APIs
 export const professorAuthAPI = {
-  // PSRU login for professors
   psruLogin: (data) => axios.post(`${API_URL}/api/auth/psru/professor`, data),
-  // Self-auth login for admin
   selfLogin: (data) => axios.post(`${API_URL}/api/auth/login`, data),
 };
 
-// Professor Dashboard APIs
 export const professorDashboardAPI = {
   getStats: () => professorApi.get('/api/professor/dashboard/stats'),
 };
 
-// Professor Course Registration APIs
 export const professorCourseRegistrationAPI = {
   getAll: () => professorApi.get('/api/professor/course-registration'),
   getFaculties: () => professorApi.get('/api/professor/course-registration/faculties'),
@@ -57,7 +50,6 @@ export const professorCourseRegistrationAPI = {
   create: (data) => professorApi.post('/api/professor/course-registration', data),
   update: (id, data) => professorApi.put(`/api/professor/course-registration/${id}`, data),
   delete: (id) => professorApi.delete(`/api/professor/course-registration/${id}`),
-  // File operations
   getFiles: (courseId) => professorApi.get(`/api/professor/course-registration/${courseId}/files`),
   uploadFile: (courseId, file) => {
     const formData = new FormData();
@@ -69,7 +61,6 @@ export const professorCourseRegistrationAPI = {
   deleteFile: (courseId, fileId) => professorApi.delete(`/api/professor/course-registration/${courseId}/files/${fileId}`),
 };
 
-// Professor Course Books APIs
 export const professorCourseBooksAPI = {
   getMyCourses: () => professorApi.get('/api/professor/course-books/my-courses'),
   searchBooks: (keyword) => professorApi.get(`/api/professor/course-books/search?keyword=${encodeURIComponent(keyword)}`),

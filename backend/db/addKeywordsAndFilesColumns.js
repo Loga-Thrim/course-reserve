@@ -11,28 +11,24 @@ const addKeywordsAndFilesColumns = async () => {
   try {
     console.log('Adding keywords and files columns to professor_courses...\n');
 
-    // Add keywords column (array of text)
     await client.query(`
       ALTER TABLE professor_courses 
       ADD COLUMN IF NOT EXISTS keywords TEXT[] DEFAULT '{}'
     `);
     console.log('✓ Added keywords column');
 
-    // Add faculty_id column
     await client.query(`
       ALTER TABLE professor_courses 
       ADD COLUMN IF NOT EXISTS faculty_id INTEGER REFERENCES faculties(id)
     `);
     console.log('✓ Added faculty_id column');
 
-    // Add curriculum_id column
     await client.query(`
       ALTER TABLE professor_courses 
       ADD COLUMN IF NOT EXISTS curriculum_id INTEGER REFERENCES curriculums(id)
     `);
     console.log('✓ Added curriculum_id column');
 
-    // Create course_files table for file uploads
     await client.query(`
       CREATE TABLE IF NOT EXISTS course_files (
         id SERIAL PRIMARY KEY,
@@ -48,7 +44,6 @@ const addKeywordsAndFilesColumns = async () => {
     `);
     console.log('✓ Created course_files table');
 
-    // Create index for faster queries
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_course_files_course_id 
       ON course_files(course_id)

@@ -1,7 +1,6 @@
 const pool = require('../../config/db');
 
 const activityLogController = {
-  // Get activity logs with pagination and filters
   getLogs: async (req, res) => {
     try {
       const { 
@@ -71,11 +70,9 @@ const activityLogController = {
         paramIndex++;
       }
 
-      // Get total count
       const countResult = await pool.query(countQuery, params);
       const total = parseInt(countResult.rows[0].count);
 
-      // Get logs with pagination
       query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(limit, offset);
 
@@ -96,7 +93,6 @@ const activityLogController = {
     }
   },
 
-  // Get activity statistics
   getStats: async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
@@ -108,35 +104,29 @@ const activityLogController = {
         dateFilter = ' WHERE created_at >= $1 AND created_at <= $2';
         params.push(startDate, endDate + ' 23:59:59');
       } else {
-        // Default: last 30 days
         dateFilter = " WHERE created_at >= NOW() - INTERVAL '30 days'";
       }
 
-      // Total logs
       const totalResult = await pool.query(
         `SELECT COUNT(*) as total FROM activity_logs${dateFilter}`,
         params
       );
 
-      // Logs by user type
       const byUserTypeResult = await pool.query(
         `SELECT user_type, COUNT(*) as count FROM activity_logs${dateFilter} GROUP BY user_type ORDER BY count DESC`,
         params
       );
 
-      // Logs by action
       const byActionResult = await pool.query(
         `SELECT action, COUNT(*) as count FROM activity_logs${dateFilter} GROUP BY action ORDER BY count DESC`,
         params
       );
 
-      // Logs by resource type
       const byResourceResult = await pool.query(
         `SELECT resource_type, COUNT(*) as count FROM activity_logs${dateFilter} GROUP BY resource_type ORDER BY count DESC`,
         params
       );
 
-      // Logs by day (for chart)
       const byDayResult = await pool.query(
         `SELECT DATE(created_at) as date, COUNT(*) as count 
          FROM activity_logs${dateFilter} 
@@ -146,7 +136,6 @@ const activityLogController = {
         params
       );
 
-      // Top active users
       const topUsersResult = await pool.query(
         `SELECT user_id, user_name, user_email, user_type, COUNT(*) as activity_count 
          FROM activity_logs${dateFilter} 
@@ -156,7 +145,6 @@ const activityLogController = {
         params
       );
 
-      // Login count by user type
       const loginsByTypeResult = await pool.query(
         `SELECT user_type, COUNT(*) as count 
          FROM activity_logs${dateFilter} AND action = 'login'
@@ -164,7 +152,6 @@ const activityLogController = {
         params.length > 0 ? params : []
       );
 
-      // All time summary
       const allTimeResult = await pool.query(
         `SELECT COUNT(*) as total,
                 COUNT(CASE WHEN action = 'login' THEN 1 END) as logins,
@@ -190,7 +177,6 @@ const activityLogController = {
     }
   },
 
-  // Get unique values for filters
   getFilterOptions: async (req, res) => {
     try {
       const userTypes = await pool.query('SELECT DISTINCT user_type FROM activity_logs WHERE user_type IS NOT NULL ORDER BY user_type');
@@ -208,7 +194,6 @@ const activityLogController = {
     }
   },
 
-  // Export logs
   exportLogs: async (req, res) => {
     try {
       const { startDate, endDate, userType, action } = req.query;
@@ -262,10 +247,8 @@ const activityLogController = {
     }
   },
 
-  // Get student usage report by faculty and program
   getStudentReport: async (req, res) => {
     try {
-      // Logins by faculty
       const byFacultyResult = await pool.query(`
         SELECT faculty, COUNT(*) as login_count, COUNT(DISTINCT user_id) as unique_users
         FROM activity_logs 
@@ -274,7 +257,6 @@ const activityLogController = {
         ORDER BY login_count DESC
       `);
 
-      // Logins by program
       const byProgramResult = await pool.query(`
         SELECT faculty, program, COUNT(*) as login_count, COUNT(DISTINCT user_id) as unique_users
         FROM activity_logs 
@@ -283,7 +265,6 @@ const activityLogController = {
         ORDER BY login_count DESC
       `);
 
-      // Daily logins for students
       const dailyLoginsResult = await pool.query(`
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM activity_logs 
@@ -293,7 +274,6 @@ const activityLogController = {
         LIMIT 30
       `);
 
-      // Top active students
       const topStudentsResult = await pool.query(`
         SELECT user_id, user_name, user_email, faculty, program, COUNT(*) as activity_count
         FROM activity_logs 
@@ -303,7 +283,6 @@ const activityLogController = {
         LIMIT 20
       `);
 
-      // Total stats
       const totalResult = await pool.query(`
         SELECT 
           COUNT(*) as total_activities,
@@ -327,10 +306,8 @@ const activityLogController = {
     }
   },
 
-  // Get professor usage report
   getProfessorReport: async (req, res) => {
     try {
-      // Logins by faculty
       const byFacultyResult = await pool.query(`
         SELECT faculty, COUNT(*) as login_count, COUNT(DISTINCT user_id) as unique_users
         FROM activity_logs 
@@ -339,7 +316,6 @@ const activityLogController = {
         ORDER BY login_count DESC
       `);
 
-      // Activity by type
       const byActionResult = await pool.query(`
         SELECT action, resource_type, COUNT(*) as count
         FROM activity_logs 
@@ -348,7 +324,6 @@ const activityLogController = {
         ORDER BY count DESC
       `);
 
-      // Daily activities
       const dailyActivityResult = await pool.query(`
         SELECT DATE(created_at) as date, 
                COUNT(*) as total,
@@ -361,7 +336,6 @@ const activityLogController = {
         LIMIT 30
       `);
 
-      // Top active professors
       const topProfessorsResult = await pool.query(`
         SELECT user_id, user_name, user_email, faculty, 
                COUNT(*) as activity_count,
@@ -374,7 +348,6 @@ const activityLogController = {
         LIMIT 20
       `);
 
-      // Total stats
       const totalResult = await pool.query(`
         SELECT 
           COUNT(*) as total_activities,

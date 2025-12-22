@@ -14,12 +14,10 @@ export default function CMSUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Modal states
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // create or edit
+  const [modalMode, setModalMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
   
-  // Form states
   const [formData, setFormData] = useState({
     name: "",
     email: "",

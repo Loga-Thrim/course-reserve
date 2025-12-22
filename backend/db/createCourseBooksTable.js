@@ -11,7 +11,6 @@ const createCourseBooksTable = async () => {
   try {
     console.log('Creating course_books table...\n');
 
-    // Create course_books table for books added to courses by professors
     await client.query(`
       CREATE TABLE IF NOT EXISTS course_books (
         id SERIAL PRIMARY KEY,
@@ -30,7 +29,6 @@ const createCourseBooksTable = async () => {
     `);
     console.log('✓ Created course_books table');
 
-    // Create index for faster queries
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_course_books_course_id 
       ON course_books(course_id)

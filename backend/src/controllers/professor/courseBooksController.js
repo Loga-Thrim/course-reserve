@@ -2,18 +2,15 @@ const pool = require('../../config/db');
 const { psruAxios, PSRU_ENDPOINTS } = require('../../config/psruApi');
 const activityLogger = require('../../services/activityLogger');
 
-// Helper function to check if user has access to a course
 const checkCourseAccess = async (courseId, user) => {
   const isAdmin = user.role === 'admin';
   
-  // Admin has access to all courses
   if (isAdmin) {
     const result = await pool.query('SELECT * FROM professor_courses WHERE id = $1', [courseId]);
     return result.rows.length > 0 ? result.rows[0] : null;
   }
   
-  // Professor: check by professor_id OR instructor name
-  const professorId = user.barcode || user.id; // barcode for PSRU auth, id for self-auth
+  const professorId = user.barcode || user.id;
   const result = await pool.query(
     `SELECT pc.* FROM professor_courses pc
      LEFT JOIN course_instructors ci ON pc.id = ci.course_id
@@ -40,10 +37,9 @@ const searchLibraryBooks = async (keyword) => {
 };
 
 const courseBooksController = {
-  // Get courses where user is creator OR instructor (admin sees all)
   getMyCourses: async (req, res) => {
     try {
-      const professorId = req.user.barcode || req.user.userId || req.user.id; // barcode for PSRU auth, userId/id for self-auth
+      const professorId = req.user.barcode || req.user.userId || req.user.id;
       const userName = req.user.name;
       const isAdmin = req.user.role === 'admin';
 
@@ -61,7 +57,6 @@ const courseBooksController = {
       
       let params = [];
       
-      // Admin sees all courses, professor sees only their own
       if (!isAdmin) {
         query += `
           WHERE pc.professor_id = $1
@@ -85,18 +80,15 @@ const courseBooksController = {
     }
   },
 
-  // Get book suggestions for a course from database (pre-fetched)
   getBookSuggestions: async (req, res) => {
     try {
       const { courseId } = req.params;
 
-      // Check if user has access to this course (admin or owner/instructor)
       const course = await checkCourseAccess(courseId, req.user);
       if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายวิชานี้' });
       }
 
-      // Get recommended books from database (admin recommended first)
       const result = await pool.query(
         `SELECT DISTINCT book_id as id, title, author, publisher, callnumber, isbn, bookcover, 
                 mattype_name as "mattypeName", lang, keyword_source, admin_recommended
@@ -106,7 +98,6 @@ const courseBooksController = {
         [courseId]
       );
 
-      // Use keywords from course
       const courseKeywords = course.keywords || [];
 
       res.json({
@@ -119,18 +110,15 @@ const courseBooksController = {
     }
   },
 
-  // Refresh book recommendations for a course
   refreshBookSuggestions: async (req, res) => {
     try {
       const { courseId } = req.params;
 
-      // Check if user has access to this course (admin or owner/instructor)
       const course = await checkCourseAccess(courseId, req.user);
       if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายวิชานี้' });
       }
 
-      // Use keywords from course only
       const { fetchAndStoreRecommendedBooks } = require('../../services/bookRecommendationService');
       
       const keywordsToUse = course.keywords || [];
@@ -155,7 +143,6 @@ const courseBooksController = {
     }
   },
 
-  // Search books by custom keyword
   searchBooks: async (req, res) => {
     try {
       const { keyword } = req.query;
@@ -187,7 +174,6 @@ const courseBooksController = {
     }
   },
 
-  // Get books added to a course
   getCourseBooks: async (req, res) => {
     try {
       const { courseId } = req.params;
@@ -207,19 +193,16 @@ const courseBooksController = {
     }
   },
 
-  // Add book to course
   addBookToCourse: async (req, res) => {
     try {
       const { courseId } = req.params;
       const { book_id, title, author, publisher, callnumber, isbn, bookcover } = req.body;
 
-      // Check if user has access to this course (admin or owner/instructor)
       const course = await checkCourseAccess(courseId, req.user);
       if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เพิ่มหนังสือในรายวิชานี้' });
       }
 
-      // Check if book already added
       const existingBook = await pool.query(
         'SELECT id FROM course_books WHERE course_id = $1 AND book_id = $2',
         [courseId, book_id]
@@ -236,7 +219,6 @@ const courseBooksController = {
         [courseId, book_id, title, author, publisher, callnumber, isbn, bookcover, req.user.barcode]
       );
 
-      // Log activity
       await activityLogger.logCreate(
         { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
         'professor',
@@ -254,12 +236,10 @@ const courseBooksController = {
     }
   },
 
-  // Remove book from course
   removeBookFromCourse: async (req, res) => {
     try {
       const { courseId, bookId } = req.params;
 
-      // Check if user has access to this course (admin or owner/instructor)
       const course = await checkCourseAccess(courseId, req.user);
       if (!course) {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์ลบหนังสือจากรายวิชานี้' });
@@ -274,7 +254,6 @@ const courseBooksController = {
         return res.status(404).json({ error: 'ไม่พบหนังสือที่ต้องการลบ' });
       }
 
-      // Log activity
       await activityLogger.logDelete(
         { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
         'professor',

@@ -13,13 +13,11 @@ export default function ProfessorLoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if already logged in
     const token = localStorage.getItem("professorToken");
     const user = localStorage.getItem("professorUser");
     
     if (token && user) {
       const parsedUser = JSON.parse(user);
-      // Allow both professor and admin roles
       if (parsedUser.role === "professor" || parsedUser.role === "admin") {
         router.push("/professor/dashboard");
       }
@@ -35,23 +33,19 @@ export default function ProfessorLoginPage() {
       let response;
       let isAdminLogin = false;
 
-      // Try PSRU login first (for professors)
       try {
         response = await professorAuthAPI.psruLogin({ username, password });
       } catch (psruError) {
-        // If PSRU fails, try self-auth (for admin using email/password)
-        // Check if username looks like an email
         if (username.includes("@")) {
           response = await professorAuthAPI.selfLogin({ email: username, password });
           isAdminLogin = true;
         } else {
-          throw psruError; // Re-throw if not an email
+          throw psruError;
         }
       }
 
       const { token, user } = response.data;
 
-      // Check if user is professor or admin
       if (user.role !== "professor" && user.role !== "admin") {
         setError("คุณไม่มีสิทธิ์เข้าถึงระบบอาจารย์");
         setLoading(false);
@@ -71,7 +65,6 @@ export default function ProfessorLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full mb-4 shadow-lg">
             <FiBook className="text-3xl text-white" />
@@ -82,7 +75,6 @@ export default function ProfessorLoginPage() {
           <p className="text-emerald-50">Book Recommendation System</p>
         </div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-emerald-100">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-6 text-center">
             เข้าสู่ระบบอาจารย์

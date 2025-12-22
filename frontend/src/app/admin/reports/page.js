@@ -131,7 +131,6 @@ export default function AdminReportsPage() {
         return;
       }
 
-      // Convert to CSV
       const headers = Object.keys(data[0]);
       const csvContent = [
         headers.join(","),
@@ -139,7 +138,6 @@ export default function AdminReportsPage() {
           headers
             .map((header) => {
               let cell = row[header] ?? "";
-              // Escape quotes and wrap in quotes if contains comma
               cell = String(cell).replace(/"/g, '""');
               if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
                 cell = `"${cell}"`;
@@ -150,7 +148,6 @@ export default function AdminReportsPage() {
         ),
       ].join("\n");
 
-      // Add BOM for Thai characters
       const BOM = "\uFEFF";
       const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
@@ -176,7 +173,6 @@ export default function AdminReportsPage() {
         return;
       }
 
-      // Create Excel-compatible HTML table
       const headers = Object.keys(data[0]);
       let tableHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
@@ -643,7 +639,6 @@ export default function AdminReportsPage() {
   );
 }
 
-// Export Card Component
 function ExportCard({ title, description, onExportCSV, onExportExcel, exporting }) {
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-emerald-300 transition-colors">

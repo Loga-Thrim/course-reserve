@@ -6,7 +6,6 @@ async function dropCurriculumColumns() {
   try {
     console.log('Dropping curriculum_th and curriculum_en columns from professor_courses...');
     
-    // Check if columns exist before dropping
     const checkColumns = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
@@ -19,7 +18,6 @@ async function dropCurriculumColumns() {
       return;
     }
     
-    // Drop columns
     await client.query(`
       ALTER TABLE professor_courses 
       DROP COLUMN IF EXISTS curriculum_th,

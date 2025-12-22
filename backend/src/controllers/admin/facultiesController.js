@@ -1,7 +1,6 @@
 const pool = require('../../config/db');
 
 const adminFacultiesController = {
-  // Get all faculties
   getAllFaculties: async (req, res) => {
     try {
       const result = await pool.query('SELECT * FROM faculties ORDER BY id');
@@ -12,7 +11,6 @@ const adminFacultiesController = {
     }
   },
 
-  // Create faculty
   createFaculty: async (req, res) => {
     try {
       const { name } = req.body;
@@ -25,14 +23,13 @@ const adminFacultiesController = {
       res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error('Create faculty error:', error);
-      if (error.code === '23505') { // Unique constraint violation
+      if (error.code === '23505') {
         return res.status(400).json({ error: 'Faculty already exists' });
       }
       res.status(500).json({ error: 'Server error' });
     }
   },
 
-  // Update faculty
   updateFaculty: async (req, res) => {
     try {
       const { id } = req.params;
@@ -54,7 +51,6 @@ const adminFacultiesController = {
     }
   },
 
-  // Delete faculty
   deleteFaculty: async (req, res) => {
     try {
       const { id } = req.params;

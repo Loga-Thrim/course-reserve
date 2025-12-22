@@ -1,13 +1,10 @@
 const pool = require('../config/db');
 
 const courseBooksController = {
-  // Get all curriculums with courses that have books (filtered by student's program)
   getCurriculumsWithCourses: async (req, res) => {
     try {
-      // Get student's program from JWT token (e.g., "วิทยาการคอมพิวเตอร์")
       const studentProgram = req.user?.program;
       
-      // Build query - filter by student's program if available
       let query = `
         SELECT DISTINCT 
           c.id as curriculum_id,
@@ -24,7 +21,6 @@ const courseBooksController = {
       
       const params = [];
       
-      // Filter by student's program - match curriculum name containing the program name
       if (studentProgram) {
         params.push(`%${studentProgram}%`);
         query += ` AND c.name ILIKE $${params.length}`;
@@ -34,7 +30,6 @@ const courseBooksController = {
       
       const result = await pool.query(query, params);
 
-      // For each curriculum, get its courses that have books with full details
       const curriculums = await Promise.all(
         result.rows.map(async (curriculum) => {
           const coursesResult = await pool.query(`
@@ -77,13 +72,11 @@ const courseBooksController = {
     }
   },
 
-  // Get course files for download
   getCourseFiles: async (req, res) => {
     try {
       const { courseId } = req.params;
       const studentProgram = req.user?.program;
 
-      // Verify course belongs to student's program
       const courseCheck = await pool.query(`
         SELECT pc.id FROM professor_courses pc
         INNER JOIN curriculums c ON pc.curriculum_id = c.id
@@ -107,7 +100,6 @@ const courseBooksController = {
     }
   },
 
-  // Get books by curriculum or course (filtered by student's program)
   getBooks: async (req, res) => {
     try {
       const { curriculumId, courseId } = req.query;
@@ -135,7 +127,6 @@ const courseBooksController = {
 
       const params = [];
 
-      // Filter by student's program if available
       if (studentProgram) {
         params.push(`%${studentProgram}%`);
         query += ` AND c.name ILIKE $${params.length}`;

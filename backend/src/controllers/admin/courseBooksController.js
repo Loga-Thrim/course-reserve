@@ -1,7 +1,6 @@
 const pool = require('../../config/db');
 const { psruAxios, PSRU_ENDPOINTS } = require('../../config/psruApi');
 
-// Search books from library API
 const searchLibraryBooks = async (keyword) => {
   try {
     const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
@@ -17,7 +16,6 @@ const searchLibraryBooks = async (keyword) => {
 };
 
 const adminCourseBooksController = {
-  // Get all professor courses for admin
   getAllCourses: async (req, res) => {
     try {
       const { search } = req.query;
@@ -52,7 +50,6 @@ const adminCourseBooksController = {
     }
   },
 
-  // Get recommended books for a course (admin view)
   getRecommendedBooks: async (req, res) => {
     try {
       const { courseId } = req.params;
@@ -72,7 +69,6 @@ const adminCourseBooksController = {
     }
   },
 
-  // Search books from library API
   searchBooks: async (req, res) => {
     try {
       const { keyword } = req.query;
@@ -104,14 +100,12 @@ const adminCourseBooksController = {
     }
   },
 
-  // Add book recommendation (admin)
   addRecommendedBook: async (req, res) => {
     try {
       const { courseId } = req.params;
       const adminId = req.user.barcode;
       const { book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang } = req.body;
 
-      // Check if course exists
       const courseCheck = await pool.query(
         'SELECT id FROM professor_courses WHERE id = $1',
         [courseId]
@@ -121,14 +115,12 @@ const adminCourseBooksController = {
         return res.status(404).json({ error: 'ไม่พบรายวิชา' });
       }
 
-      // Check if book already exists for this course
       const existingBook = await pool.query(
         'SELECT id FROM course_recommended_books WHERE course_id = $1 AND book_id = $2',
         [courseId, book_id]
       );
 
       if (existingBook.rows.length > 0) {
-        // Update existing to be admin recommended
         const result = await pool.query(
           `UPDATE course_recommended_books 
            SET admin_recommended = true, added_by = $1
@@ -139,7 +131,6 @@ const adminCourseBooksController = {
         return res.json(result.rows[0]);
       }
 
-      // Insert new book recommendation
       const result = await pool.query(
         `INSERT INTO course_recommended_books 
          (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang, admin_recommended, added_by)
@@ -155,7 +146,6 @@ const adminCourseBooksController = {
     }
   },
 
-  // Remove book recommendation (admin)
   removeRecommendedBook: async (req, res) => {
     try {
       const { courseId, bookId } = req.params;
@@ -176,7 +166,6 @@ const adminCourseBooksController = {
     }
   },
 
-  // Toggle admin recommended status
   toggleAdminRecommended: async (req, res) => {
     try {
       const { courseId, bookId } = req.params;

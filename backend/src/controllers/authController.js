@@ -14,7 +14,7 @@ const authController = {
       }
 
       const { email, password, name, faculty } = req.body;
-      const role = 'user'; // Default role for new users
+      const role = 'user';
 
       const userExists = await pool.query(
         'SELECT * FROM users WHERE email = $1',
@@ -79,7 +79,6 @@ const authController = {
         return res.status(400).json({ error: 'Invalid credentials' });
       }
 
-      // Generate JWT token
       const token = jwt.sign(
         { 
           userId: user.rows[0].id, 
@@ -108,7 +107,6 @@ const authController = {
     }
   },
 
-  // PSRU External Authentication for Student
   psruStudentLogin: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -117,7 +115,6 @@ const authController = {
         return res.status(400).json({ error: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน' });
       }
 
-      // Call PSRU API
       const psruResponse = await psruAxios.post(PSRU_ENDPOINTS.AUTH, {
         username,
         password
@@ -131,18 +128,15 @@ const authController = {
 
       const userData = data.message[0];
 
-      // Check if user is student (PTTYPEID = 3)
       if (userData.PTTYPEID !== '3') {
         return res.status(403).json({ error: 'บัญชีนี้ไม่ใช่บัญชีนักศึกษา กรุณาใช้ระบบสำหรับอาจารย์' });
       }
 
-      // Check if membership is expired (EXPIREDATE format: YYYYMMDD in Buddhist year)
       if (userData.EXPIREDATE) {
         const expireDateStr = userData.EXPIREDATE;
-        // Convert Buddhist year to Gregorian (subtract 543)
         const buddhistYear = parseInt(expireDateStr.substring(0, 4));
         const gregorianYear = buddhistYear - 543;
-        const month = parseInt(expireDateStr.substring(4, 6)) - 1; // 0-indexed
+        const month = parseInt(expireDateStr.substring(4, 6)) - 1;
         const day = parseInt(expireDateStr.substring(6, 8));
         const expireDate = new Date(gregorianYear, month, day);
         const today = new Date();
@@ -153,7 +147,6 @@ const authController = {
         }
       }
 
-      // Generate JWT token
       const token = jwt.sign(
         {
           userId: userData.USERID,
@@ -183,7 +176,6 @@ const authController = {
         profilePic: userData.PATHPIC
       };
 
-      // Log login activity
       await activityLogger.logLogin(
         { 
           id: userData.USERID, 
@@ -210,7 +202,6 @@ const authController = {
     }
   },
 
-  // PSRU External Authentication for Professor
   psruProfessorLogin: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -219,7 +210,6 @@ const authController = {
         return res.status(400).json({ error: 'กรุณากรอกรหัสอาจารย์และรหัสผ่าน' });
       }
 
-      // Call PSRU API
       const psruResponse = await psruAxios.post(PSRU_ENDPOINTS.AUTH, {
         username,
         password
@@ -233,18 +223,15 @@ const authController = {
 
       const userData = data.message[0];
 
-      // Check if user is professor (PTTYPEID = 1)
       if (userData.PTTYPEID !== '1') {
         return res.status(403).json({ error: 'บัญชีนี้ไม่ใช่บัญชีอาจารย์ กรุณาใช้ระบบสำหรับนักศึกษา' });
       }
 
-      // Check if membership is expired (EXPIREDATE format: YYYYMMDD in Buddhist year)
       if (userData.EXPIREDATE) {
         const expireDateStr = userData.EXPIREDATE;
-        // Convert Buddhist year to Gregorian (subtract 543)
         const buddhistYear = parseInt(expireDateStr.substring(0, 4));
         const gregorianYear = buddhistYear - 543;
-        const month = parseInt(expireDateStr.substring(4, 6)) - 1; // 0-indexed
+        const month = parseInt(expireDateStr.substring(4, 6)) - 1;
         const day = parseInt(expireDateStr.substring(6, 8));
         const expireDate = new Date(gregorianYear, month, day);
         const today = new Date();
@@ -255,7 +242,6 @@ const authController = {
         }
       }
 
-      // Generate JWT token
       const token = jwt.sign(
         {
           userId: userData.USERID,
@@ -285,7 +271,6 @@ const authController = {
         profilePic: userData.PATHPIC
       };
 
-      // Log login activity
       await activityLogger.logLogin(
         { 
           id: userData.USERID, 
@@ -312,10 +297,8 @@ const authController = {
     }
   },
 
-  // Get current user (from JWT token)
   getCurrentUser: async (req, res) => {
     try {
-      // Return user info from JWT token (set by auth middleware)
       res.json({
         id: req.user.userId,
         barcode: req.user.barcode,

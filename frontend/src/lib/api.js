@@ -38,7 +38,6 @@ export const authAPI = {
   register: (data) => api.post('/api/auth/register', data),
   login: (data) => api.post('/api/auth/login', data),
   getCurrentUser: () => api.get('/api/auth/me'),
-  // PSRU External Authentication
   psruStudentLogin: (data) => api.post('/api/auth/psru/student', data),
   psruProfessorLogin: (data) => api.post('/api/auth/psru/professor', data),
 };
@@ -49,7 +48,7 @@ export const facultiesAPI = {
 
 export const courseBooksAPI = {
   getCurriculums: () => api.get('/api/course-books/curriculums'),
-  getBooks: (params) => api.get('/api/course-books/books', { params }), // params: { curriculumId, courseId }
+  getBooks: (params) => api.get('/api/course-books/books', { params }),
   getCourseFiles: (courseId) => api.get(`/api/course-books/files/${courseId}`),
 };
 

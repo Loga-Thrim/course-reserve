@@ -52,7 +52,7 @@ export default function CMSDashboardPage() {
         loading: false,
       });
 
-      setFacultyStats(facultyRes.data.slice(0, 5)); // Top 5 faculties
+      setFacultyStats(facultyRes.data.slice(0, 5));
       setActivityStats(activityRes.data);
       setStudentReport(studentRes.data);
       setProfessorReport(professorRes.data);

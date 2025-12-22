@@ -1,9 +1,7 @@
 const pool = require('../src/config/db');
 const { fetchAndStoreRecommendedBooks } = require('../src/services/bookRecommendationService');
 
-// Mock courses data - realistic Thai university courses
 const mockCourses = [
-  // วิทยาศาสตร์และเทคโนโลยี - วิทยาการคอมพิวเตอร์
   {
     code_th: 'CS101',
     code_en: 'CS101',
@@ -57,7 +55,6 @@ const mockCourses = [
     website: ''
   },
 
-  // วิทยาศาสตร์และเทคโนโลยี - เทคโนโลยีสารสนเทศ
   {
     code_th: 'IT101',
     code_en: 'IT101',
@@ -85,7 +82,6 @@ const mockCourses = [
     website: 'https://it.psru.ac.th/webdev'
   },
 
-  // วิทยาการจัดการ - การบัญชี
   {
     code_th: 'AC101',
     code_en: 'AC101',
@@ -113,7 +109,6 @@ const mockCourses = [
     website: ''
   },
 
-  // วิทยาการจัดการ - การตลาด
   {
     code_th: 'MK101',
     code_en: 'MK101',
@@ -141,7 +136,6 @@ const mockCourses = [
     website: 'https://ms.psru.ac.th/digitalmarketing'
   },
 
-  // เทคโนโลยีอุตสาหกรรม - วิศวกรรมคอมพิวเตอร์
   {
     code_th: 'CPE101',
     code_en: 'CPE101',
@@ -169,7 +163,6 @@ const mockCourses = [
     website: ''
   },
 
-  // ครุศาสตร์
   {
     code_th: 'ED101',
     code_en: 'ED101',
@@ -197,7 +190,6 @@ const mockCourses = [
     website: ''
   },
 
-  // พยาบาลศาสตร์
   {
     code_th: 'NS101',
     code_en: 'NS101',
@@ -225,7 +217,6 @@ const mockCourses = [
     website: ''
   },
 
-  // มนุษยศาสตร์และสังคมศาสตร์ - ภาษาอังกฤษ
   {
     code_th: 'EN101',
     code_en: 'EN101',
@@ -253,7 +244,6 @@ const mockCourses = [
     website: ''
   },
 
-  // เทคโนโลยีการเกษตรและอาหาร
   {
     code_th: 'AG101',
     code_en: 'AG101',

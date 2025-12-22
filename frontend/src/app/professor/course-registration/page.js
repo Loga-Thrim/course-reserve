@@ -15,17 +15,14 @@ export default function CourseRegistrationPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modal states
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedCourse, setSelectedCourse] = useState(null);
 
-  // File upload states
   const [courseFiles, setCourseFiles] = useState([]);
-  const [pendingFiles, setPendingFiles] = useState([]); // Files to upload after course creation
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
-  // Form data
   const [formData, setFormData] = useState({
     faculty_id: "",
     curriculum_id: "",
@@ -123,11 +120,9 @@ export default function CourseRegistrationPage() {
       keywords: course.keywords?.length > 0 ? course.keywords : [""],
       website: course.website || ""
     });
-    // Fetch curriculums for the selected faculty
     if (course.faculty_id) {
       fetchCurriculums(course.faculty_id);
     }
-    // Fetch files for this course
     fetchCourseFiles(course.id);
     setShowModal(true);
   };
@@ -147,7 +142,6 @@ export default function CourseRegistrationPage() {
     e.preventDefault();
 
     try {
-      // Filter out empty values
       const submitData = {
         ...formData,
         instructors: formData.instructors.filter(i => i.trim() !== ""),
@@ -158,7 +152,6 @@ export default function CourseRegistrationPage() {
         const response = await professorCourseRegistrationAPI.create(submitData);
         const newCourseId = response.data.id;
         
-        // Upload pending files if any
         if (pendingFiles.length > 0 && newCourseId) {
           for (const file of pendingFiles) {
             try {
@@ -190,7 +183,6 @@ export default function CourseRegistrationPage() {
     });
   };
 
-  // Instructor handlers
   const handleInstructorChange = (index, value) => {
     const newInstructors = [...formData.instructors];
     newInstructors[index] = value;
@@ -208,7 +200,6 @@ export default function CourseRegistrationPage() {
     }
   };
 
-  // Keyword handlers
   const handleKeywordChange = (index, value) => {
     const newKeywords = [...formData.keywords];
     newKeywords[index] = value;
@@ -226,7 +217,6 @@ export default function CourseRegistrationPage() {
     }
   };
 
-  // File handlers
   const fetchCourseFiles = async (courseId) => {
     try {
       const response = await professorCourseRegistrationAPI.getFiles(courseId);
@@ -240,7 +230,6 @@ export default function CourseRegistrationPage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -257,14 +246,12 @@ export default function CourseRegistrationPage() {
       return;
     }
 
-    // Validate file size (10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('ขนาดไฟล์ต้องไม่เกิน 10MB');
       e.target.value = '';
       return;
     }
 
-    // If creating new course, store file locally
     if (modalMode === "create") {
       setPendingFiles(prev => [...prev, file]);
       toast.success('เพิ่มไฟล์แล้ว (จะอัปโหลดเมื่อบันทึกรายวิชา)');
@@ -272,7 +259,6 @@ export default function CourseRegistrationPage() {
       return;
     }
 
-    // If editing, upload immediately
     try {
       setUploadingFile(true);
       await professorCourseRegistrationAPI.uploadFile(selectedCourse.id, file);
@@ -316,7 +302,6 @@ export default function CourseRegistrationPage() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Filter courses based on search query and "my courses" filter
   const filteredCourses = courses.filter(course => {
     const query = searchQuery.toLowerCase();
     const matchesSearch = (

@@ -46,7 +46,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    // Validation
     if (!faculty) {
       setError("กรุณาเลือกคณะ");
       return;

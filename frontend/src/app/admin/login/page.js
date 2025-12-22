@@ -13,7 +13,6 @@ export default function CMSLoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if already logged in
     const token = localStorage.getItem("adminToken");
     const user = localStorage.getItem("adminUser");
     
@@ -34,7 +33,6 @@ export default function CMSLoginPage() {
       const response = await adminAuthAPI.login({ email, password });
       const { token, user } = response.data;
 
-      // Check if user is admin
       if (user.role !== "admin") {
         setError("คุณไม่มีสิทธิ์เข้าถึงระบบผู้ดูแล");
         setLoading(false);

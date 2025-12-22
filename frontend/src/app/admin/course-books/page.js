@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 
 const ITEMS_PER_PAGE = 12;
 
-// Memoized BookCard component to prevent unnecessary re-renders
 const BookCard = memo(({ book, showAddButton = false, showRemoveButton = false, isAdminRecommended = false, onAdd, onRemove, isAdded, isAdding }) => (
   <div className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all p-4 ${isAdminRecommended ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100'}`}>
     <div className="flex gap-4">
@@ -156,10 +155,8 @@ export default function AdminCourseBooksPage() {
     }
   };
 
-  // Memoized set for quick lookup of added books
   const addedBookIds = useMemo(() => new Set(recommendedBooks.map(rb => rb.book_id)), [recommendedBooks]);
 
-  // Memoized callbacks to prevent re-renders
   const isBookAdded = useCallback((bookId) => addedBookIds.has(bookId), [addedBookIds]);
 
   const handleAddBook = useCallback(async (book) => {
@@ -200,7 +197,6 @@ export default function AdminCourseBooksPage() {
     }
   }, [selectedCourse]);
 
-  // Memoized filter courses by search
   const filteredCourses = useMemo(() => courses.filter(course => 
     course.name_th?.toLowerCase().includes(courseSearch.toLowerCase()) ||
     course.name_en?.toLowerCase().includes(courseSearch.toLowerCase()) ||
@@ -208,11 +204,9 @@ export default function AdminCourseBooksPage() {
     course.code_en?.toLowerCase().includes(courseSearch.toLowerCase())
   ), [courses, courseSearch]);
 
-  // Memoized separate admin recommended and AI recommended books
   const adminBooks = useMemo(() => recommendedBooks.filter(book => book.admin_recommended), [recommendedBooks]);
   const aiBooks = useMemo(() => recommendedBooks.filter(book => !book.admin_recommended), [recommendedBooks]);
 
-  // Memoized pagination for AI books
   const totalPages = useMemo(() => Math.ceil(aiBooks.length / ITEMS_PER_PAGE), [aiBooks.length]);
   const paginatedAiBooks = useMemo(() => aiBooks.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,

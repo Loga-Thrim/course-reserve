@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 const { psruAxios, PSRU_ENDPOINTS } = require('../config/psruApi');
 
-// Search books from library API
 const searchLibraryBooks = async (keyword) => {
   try {
     const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
@@ -16,33 +15,24 @@ const searchLibraryBooks = async (keyword) => {
   }
 };
 
-// Fetch and store recommended books for a course using keywords array
 const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
   const client = await pool.connect();
   
   try {
-    console.log(`Fetching recommended books for course ${courseId}...`);
-    
-    // Filter out empty keywords
     const validKeywords = keywords.filter(k => k && k.trim().length > 0).map(k => k.trim());
-    console.log('Keywords to search:', validKeywords);
 
     if (validKeywords.length === 0) {
-      console.log('No keywords found, skipping book fetch');
       return { keywords: [], booksAdded: 0 };
     }
 
-    // Delete existing recommended books for this course (to refresh)
     await client.query('DELETE FROM course_recommended_books WHERE course_id = $1', [courseId]);
 
-    // Search and store books - search up to 15 keywords to get more results
     const seenBookIds = new Set();
     let booksAdded = 0;
     const keywordsWithResults = [];
 
     for (const keyword of validKeywords.slice(0, 15)) {
       const books = await searchLibraryBooks(keyword);
-      console.log(`Keyword "${keyword}" returned ${books.length} books`);
       
       if (books.length > 0) {
         keywordsWithResults.push(keyword);
@@ -74,7 +64,6 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
             );
             booksAdded++;
           } catch (insertError) {
-            // Ignore duplicate errors
             if (insertError.code !== '23505') {
               console.error('Error inserting book:', insertError.message);
             }
@@ -83,8 +72,6 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
       }
     }
 
-    console.log(`Total books added for course ${courseId}: ${booksAdded}`);
-    console.log(`Keywords with results: ${keywordsWithResults.join(', ')}`);
     return { keywords: validKeywords, keywordsWithResults, booksAdded };
 
   } catch (error) {

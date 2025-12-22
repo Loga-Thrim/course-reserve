@@ -34,7 +34,6 @@ export default function BookDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Get curriculum to find course info
       const curriculumRes = await courseBooksAPI.getCurriculums();
       if (curriculumRes.data.length > 0) {
         const curriculum = curriculumRes.data[0];
@@ -44,7 +43,6 @@ export default function BookDetailPage() {
         }
       }
 
-      // Get books
       const booksRes = await courseBooksAPI.getBooks({ courseId });
       const foundBook = booksRes.data.find(b => b.id === parseInt(bookId));
       if (foundBook) {

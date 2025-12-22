@@ -54,7 +54,7 @@ const RESOURCE_LABELS = {
 };
 
 export default function ActivityLogsPage() {
-  const [activeTab, setActiveTab] = useState("all"); // all, student, professor
+  const [activeTab, setActiveTab] = useState("all");
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState(null);
   const [studentReport, setStudentReport] = useState(null);
@@ -63,7 +63,6 @@ export default function ActivityLogsPage() {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 30, total: 0, totalPages: 0 });
   
-  // Filters
   const [filters, setFilters] = useState({
     userType: "",
     action: "",

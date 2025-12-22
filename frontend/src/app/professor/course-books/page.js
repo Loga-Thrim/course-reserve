@@ -9,7 +9,6 @@ import toast from "react-hot-toast";
 
 const ITEMS_PER_PAGE = 12;
 
-// Memoized BookCard component to prevent unnecessary re-renders
 const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false }) => (
   <div className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'}`}>
     <div className="flex gap-4">
@@ -124,7 +123,6 @@ export default function CourseBooksPage() {
       const response = await professorCourseBooksAPI.getMyCourses();
       setCourses(response.data);
       
-      // Check if courseId is in URL params
       const courseIdFromUrl = searchParams.get('courseId');
       if (courseIdFromUrl) {
         const targetCourse = response.data.find(c => c.id === parseInt(courseIdFromUrl));
@@ -134,7 +132,6 @@ export default function CourseBooksPage() {
         }
       }
       
-      // Default: select first course
       if (response.data.length > 0) {
         setSelectedCourse(response.data[0]);
       }
@@ -183,7 +180,6 @@ export default function CourseBooksPage() {
       setKeywords([]);
       setCurrentPage(1);
       await professorCourseBooksAPI.refreshBookSuggestions(selectedCourse.id);
-      // Fetch the updated suggestions
       const response = await professorCourseBooksAPI.getBookSuggestions(selectedCourse.id);
       setSuggestedBooks(response.data.books || []);
       setKeywords(response.data.keywords || []);
@@ -195,17 +191,14 @@ export default function CourseBooksPage() {
     }
   };
 
-  // Memoized pagination calculations
   const totalPages = useMemo(() => Math.ceil(suggestedBooks.length / ITEMS_PER_PAGE), [suggestedBooks.length]);
   const paginatedBooks = useMemo(() => suggestedBooks.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   ), [suggestedBooks, currentPage]);
 
-  // Memoized set for quick lookup of added books
   const addedBookIds = useMemo(() => new Set(courseBooks.map(cb => cb.book_id)), [courseBooks]);
 
-  // Memoized callbacks to prevent re-renders
   const isBookAdded = useCallback((bookId) => addedBookIds.has(bookId), [addedBookIds]);
 
   const handleAddBook = useCallback(async (book) => {

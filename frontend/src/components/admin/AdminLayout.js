@@ -13,7 +13,6 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip auth check on login page
     if (pathname === "/admin/login") {
       setLoading(false);
       return;
@@ -43,7 +42,6 @@ export default function AdminLayout({ children }) {
     router.push("/admin/login");
   };
 
-  // Don't show layout on login page
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }

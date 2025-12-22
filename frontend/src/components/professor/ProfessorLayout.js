@@ -13,7 +13,6 @@ export default function ProfessorLayout({ children }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip auth check on login page
     if (pathname === "/professor/login") {
       setLoading(false);
       return;
@@ -28,7 +27,6 @@ export default function ProfessorLayout({ children }) {
     }
 
     const parsedUser = JSON.parse(user);
-    // Allow both professor and admin roles
     if (parsedUser.role !== "professor" && parsedUser.role !== "admin") {
       router.push("/professor/login");
       return;
@@ -44,7 +42,6 @@ export default function ProfessorLayout({ children }) {
     router.push("/professor/login");
   };
 
-  // Don't show layout on login page
   if (pathname === "/professor/login") {
     return <>{children}</>;
   }

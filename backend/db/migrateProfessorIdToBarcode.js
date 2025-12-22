@@ -13,7 +13,6 @@ const migrateProfessorIdToBarcode = async () => {
 
     await client.query('BEGIN');
 
-    // 1. Drop foreign key constraint on professor_courses.professor_id first
     console.log('1. Dropping foreign key constraint on professor_courses.professor_id...');
     try {
       await client.query(`
@@ -25,7 +24,6 @@ const migrateProfessorIdToBarcode = async () => {
       console.log('  (No foreign key constraint to drop)');
     }
 
-    // Alter professor_courses.professor_id to VARCHAR
     console.log('\n2. Altering professor_courses.professor_id to VARCHAR...');
     await client.query(`
       ALTER TABLE professor_courses 
@@ -33,7 +31,6 @@ const migrateProfessorIdToBarcode = async () => {
     `);
     console.log('✓ professor_courses.professor_id changed to VARCHAR(50)');
 
-    // 3. Drop foreign key constraint on course_files.uploaded_by if exists
     console.log('\n3. Altering course_files.uploaded_by...');
     try {
       await client.query(`
@@ -45,14 +42,12 @@ const migrateProfessorIdToBarcode = async () => {
       console.log('  (No foreign key constraint to drop)');
     }
 
-    // Alter course_files.uploaded_by to VARCHAR
     await client.query(`
       ALTER TABLE course_files 
       ALTER COLUMN uploaded_by TYPE VARCHAR(50) USING uploaded_by::VARCHAR
     `);
     console.log('✓ course_files.uploaded_by changed to VARCHAR(50)');
 
-    // 4. Drop foreign key constraint on course_recommended_books.added_by if exists
     console.log('\n4. Altering course_recommended_books.added_by...');
     try {
       await client.query(`
@@ -64,14 +59,12 @@ const migrateProfessorIdToBarcode = async () => {
       console.log('  (No foreign key constraint to drop)');
     }
 
-    // Alter course_recommended_books.added_by to VARCHAR
     await client.query(`
       ALTER TABLE course_recommended_books 
       ALTER COLUMN added_by TYPE VARCHAR(50) USING added_by::VARCHAR
     `);
     console.log('✓ course_recommended_books.added_by changed to VARCHAR(50)');
 
-    // 5. Check if course_books table exists and alter added_by
     console.log('\n5. Checking course_books.added_by...');
     const courseBookExists = await client.query(`
       SELECT EXISTS (

@@ -1,26 +1,6 @@
 const pool = require('../config/db');
 
-/**
- * Activity Logger Service
- * Logs user activities for audit and analytics
- */
 const activityLogger = {
-  /**
-   * Log an activity
-   * @param {Object} params
-   * @param {number} params.userId - User ID
-   * @param {string} params.userType - 'student', 'professor', 'admin'
-   * @param {string} params.userName - User's name
-   * @param {string} params.userEmail - User's email
-   * @param {string} params.faculty - User's faculty (for students/professors)
-   * @param {string} params.program - User's program (for students)
-   * @param {string} params.action - Action type: 'login', 'logout', 'create', 'update', 'delete', 'view', 'download'
-   * @param {string} params.resourceType - Resource type: 'course', 'book', 'file', 'user', etc.
-   * @param {number} params.resourceId - Resource ID
-   * @param {string} params.resourceName - Resource name/title
-   * @param {Object} params.details - Additional details (JSON)
-   * @param {Object} req - Express request object (for IP and user agent)
-   */
   async log({ userId, userType, userName, userEmail, faculty, program, action, resourceType, resourceId, resourceName, details }, req = null) {
     try {
       const ipAddress = req ? (req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.ip) : null;
@@ -33,12 +13,10 @@ const activityLogger = {
         [userId, userType, userName, userEmail, faculty || null, program || null, action, resourceType, resourceId, resourceName, JSON.stringify(details || {}), ipAddress, userAgent]
       );
     } catch (error) {
-      // Don't throw error to prevent disrupting main flow
       console.error('Activity logging error:', error);
     }
   },
 
-  // Convenience methods for common actions
   async logLogin(user, userType, req) {
     await this.log({
       userId: user.id,

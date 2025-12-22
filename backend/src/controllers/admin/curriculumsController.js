@@ -1,7 +1,6 @@
 const pool = require('../../config/db');
 
 const adminCurriculumsController = {
-  // Get all curriculums (optionally filter by faculty_id)
   getAllCurriculums: async (req, res) => {
     try {
       const { faculty_id } = req.query;
@@ -28,7 +27,6 @@ const adminCurriculumsController = {
     }
   },
 
-  // Create curriculum
   createCurriculum: async (req, res) => {
     try {
       const { name, faculty_id, level } = req.body;
@@ -45,17 +43,16 @@ const adminCurriculumsController = {
       res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error('Create curriculum error:', error);
-      if (error.code === '23503') { // foreign key violation
+      if (error.code === '23503') {
         return res.status(400).json({ error: 'Invalid faculty_id' });
       }
-      if (error.code === '23505') { // unique constraint violation
+      if (error.code === '23505') {
         return res.status(400).json({ error: 'Curriculum already exists for this faculty' });
       }
       res.status(500).json({ error: 'Server error' });
     }
   },
 
-  // Update curriculum
   updateCurriculum: async (req, res) => {
     try {
       const { id } = req.params;
@@ -83,7 +80,6 @@ const adminCurriculumsController = {
     }
   },
 
-  // Delete curriculum
   deleteCurriculum: async (req, res) => {
     try {
       const { id } = req.params;

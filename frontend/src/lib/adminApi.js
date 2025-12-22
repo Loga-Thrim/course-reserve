@@ -9,7 +9,6 @@ const adminApi = axios.create({
   },
 });
 
-// Add token to requests
 adminApi.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('adminToken');
@@ -23,7 +22,6 @@ adminApi.interceptors.request.use(
   }
 );
 
-// Handle response errors
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,12 +34,10 @@ adminApi.interceptors.response.use(
   }
 );
 
-// Admin Auth APIs
 export const adminAuthAPI = {
   login: (data) => axios.post(`${API_URL}/api/auth/login`, data),
 };
 
-// Admin Users APIs
 export const adminUsersAPI = {
   getAll: (params) => adminApi.get('/api/admin/users', { params }),
   create: (data) => adminApi.post('/api/admin/users', data),
@@ -49,7 +45,6 @@ export const adminUsersAPI = {
   delete: (id) => adminApi.delete(`/api/admin/users/${id}`),
 };
 
-// Admin Faculties APIs
 export const adminFacultiesAPI = {
   getAll: () => adminApi.get('/api/admin/faculties'),
   create: (data) => adminApi.post('/api/admin/faculties', data),
@@ -57,7 +52,6 @@ export const adminFacultiesAPI = {
   delete: (id) => adminApi.delete(`/api/admin/faculties/${id}`),
 };
 
-// Admin Curriculums APIs
 export const adminCurriculumsAPI = {
   getAll: (params) => adminApi.get('/api/admin/curriculums', { params }),
   create: (data) => adminApi.post('/api/admin/curriculums', data),
@@ -65,7 +59,6 @@ export const adminCurriculumsAPI = {
   delete: (id) => adminApi.delete(`/api/admin/curriculums/${id}`),
 };
 
-// Admin Course Books APIs (for recommending books to professor courses)
 export const adminCourseBooksAPI = {
   getAllCourses: (params) => adminApi.get('/api/admin/course-books/courses', { params }),
   searchBooks: (keyword) => adminApi.get('/api/admin/course-books/search', { params: { keyword } }),
@@ -74,7 +67,6 @@ export const adminCourseBooksAPI = {
   removeRecommendedBook: (courseId, bookId) => adminApi.delete(`/api/admin/course-books/${courseId}/${bookId}`),
 };
 
-// Admin Reports APIs
 export const adminReportsAPI = {
   getOverview: () => adminApi.get('/api/admin/reports/overview'),
   getByFaculty: () => adminApi.get('/api/admin/reports/faculty'),
@@ -84,7 +76,6 @@ export const adminReportsAPI = {
   getExportData: (type) => adminApi.get('/api/admin/reports/export', { params: { type } }),
 };
 
-// Admin Activity Logs APIs
 export const adminActivityLogsAPI = {
   getLogs: (params) => adminApi.get('/api/admin/activity-logs', { params }),
   getStats: (params) => adminApi.get('/api/admin/activity-logs/stats', { params }),

@@ -1,7 +1,6 @@
 const pool = require('../../config/db');
 
 const reportController = {
-  // Get overview statistics
   getOverviewStats: async (req, res) => {
     try {
       const coursesResult = await pool.query('SELECT COUNT(*) as total FROM professor_courses');
@@ -32,7 +31,6 @@ const reportController = {
     }
   },
 
-  // Get report by faculty
   getReportByFaculty: async (req, res) => {
     try {
       const result = await pool.query(`
@@ -54,7 +52,6 @@ const reportController = {
     }
   },
 
-  // Get report by curriculum
   getReportByCurriculum: async (req, res) => {
     try {
       const { facultyId } = req.query;
@@ -82,7 +79,6 @@ const reportController = {
     }
   },
 
-  // Get detailed course report
   getCourseReport: async (req, res) => {
     try {
       const { facultyId, curriculumId, hasBooks } = req.query;
@@ -128,7 +124,6 @@ const reportController = {
     }
   },
 
-  // Get book report
   getBookReport: async (req, res) => {
     try {
       const { facultyId, curriculumId, courseId } = req.query;
@@ -168,7 +163,6 @@ const reportController = {
     }
   },
 
-  // Export data as JSON (frontend will convert to CSV/Excel)
   getExportData: async (req, res) => {
     try {
       const { type } = req.query;

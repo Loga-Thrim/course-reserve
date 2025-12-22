@@ -13,7 +13,6 @@ export default function ProfessorDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Get user from localStorage
     const savedUser = localStorage.getItem("professorUser");
     if (savedUser) {
       setUser(JSON.parse(savedUser));

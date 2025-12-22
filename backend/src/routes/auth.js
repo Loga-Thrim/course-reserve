@@ -5,7 +5,6 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-// Register
 router.post(
   '/register',
   [
@@ -16,7 +15,6 @@ router.post(
   authController.register
 );
 
-// Login
 router.post(
   '/login',
   [
@@ -26,13 +24,10 @@ router.post(
   authController.login
 );
 
-// Get current user
 router.get('/me', authMiddleware, authController.getCurrentUser);
 
-// PSRU External Authentication - Student Login
 router.post('/psru/student', authController.psruStudentLogin);
 
-// PSRU External Authentication - Professor Login
 router.post('/psru/professor', authController.psruProfessorLogin);
 
 module.exports = router;

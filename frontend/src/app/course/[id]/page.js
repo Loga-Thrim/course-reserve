@@ -35,7 +35,6 @@ export default function CourseDetailPage() {
   const fetchCourseData = async () => {
     try {
       setLoading(true);
-      // Get curriculum to find course info
       const curriculumRes = await courseBooksAPI.getCurriculums();
       if (curriculumRes.data.length > 0) {
         const curriculum = curriculumRes.data[0];
@@ -45,7 +44,6 @@ export default function CourseDetailPage() {
         }
       }
 
-      // Get books and files
       const [booksRes, filesRes] = await Promise.all([
         courseBooksAPI.getBooks({ courseId }),
         courseBooksAPI.getCourseFiles(courseId)
