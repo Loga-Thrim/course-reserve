@@ -90,13 +90,39 @@ const courseBooksController = {
       }
 
       const result = await pool.query(
-        `SELECT DISTINCT book_id as id, title, author, publisher, callnumber, isbn, bookcover, 
-                mattype_name as "mattypeName", lang, keyword_source, admin_recommended
+        `SELECT DISTINCT ON (book_id) book_id as id, title, author, publisher, callnumber, isbn, bookcover, 
+                mattype_name as "mattypeName", lang, keyword_source, admin_recommended, cat_date, created_at
          FROM course_recommended_books 
          WHERE course_id = $1
-         ORDER BY admin_recommended DESC, title`,
+         ORDER BY book_id, created_at DESC`,
         [courseId]
       );
+      
+      // Sort by: 1) admin_recommended first, 2) cat_date desc (books with cat_date first, then by date), 3) created_at desc for books without cat_date
+      result.rows.sort((a, b) => {
+        // Admin recommended first
+        if (a.admin_recommended !== b.admin_recommended) {
+          return b.admin_recommended - a.admin_recommended;
+        }
+        
+        // Both have cat_date - sort by cat_date desc
+        if (a.cat_date && b.cat_date) {
+          return new Date(b.cat_date) - new Date(a.cat_date);
+        }
+        
+        // Only a has cat_date - a comes first
+        if (a.cat_date && !b.cat_date) {
+          return -1;
+        }
+        
+        // Only b has cat_date - b comes first
+        if (!a.cat_date && b.cat_date) {
+          return 1;
+        }
+        
+        // Neither has cat_date - sort by created_at desc
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
 
       const courseKeywords = course.keywords || [];
 

@@ -52,4 +52,21 @@ export const courseBooksAPI = {
   getCourseFiles: (courseId) => api.get(`/api/course-books/files/${courseId}`),
 };
 
+export const studentAPI = {
+  // Browse all courses
+  getAllCourses: (params) => api.get('/api/student/courses', { params }),
+  // Get faculties for filter
+  getFaculties: () => api.get('/api/student/faculties'),
+  // Get curriculums for filter
+  getCurriculums: (params) => api.get('/api/student/curriculums', { params }),
+  // Get student's selected courses
+  getMyCourses: () => api.get('/api/student/my-courses'),
+  // Add course to student's list
+  addCourse: (courseId) => api.post(`/api/student/my-courses/${courseId}`),
+  // Remove course from student's list
+  removeCourse: (courseId) => api.delete(`/api/student/my-courses/${courseId}`),
+  // Get course detail with books
+  getCourseDetail: (courseId) => api.get(`/api/student/courses/${courseId}`),
+};
+
 export default api;

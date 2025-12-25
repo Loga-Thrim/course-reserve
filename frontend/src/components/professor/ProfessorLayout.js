@@ -9,10 +9,20 @@ export default function ProfessorLayout({ children }) {
   const [professorUser, setProfessorUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
+  // Wait for client-side mount
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Wait for client-side mount before checking auth
+    if (!mounted) return;
+
+    // Skip auth check for login page
     if (pathname === "/professor/login") {
       setLoading(false);
       return;
@@ -26,15 +36,23 @@ export default function ProfessorLayout({ children }) {
       return;
     }
 
-    const parsedUser = JSON.parse(user);
-    if (parsedUser.role !== "professor" && parsedUser.role !== "admin") {
-      router.push("/professor/login");
-      return;
-    }
+    try {
+      const parsedUser = JSON.parse(user);
+      
+      if (parsedUser.role !== "professor" && parsedUser.role !== "admin") {
+        router.push("/professor/login");
+        return;
+      }
 
-    setProfessorUser(parsedUser);
-    setLoading(false);
-  }, [pathname, router]);
+      setProfessorUser(parsedUser);
+      setLoading(false);
+    } catch (e) {
+      console.error("Error parsing user:", e);
+      localStorage.removeItem("professorToken");
+      localStorage.removeItem("professorUser");
+      router.push("/professor/login");
+    }
+  }, [mounted, pathname, router]);
 
   const handleLogout = () => {
     localStorage.removeItem("professorToken");

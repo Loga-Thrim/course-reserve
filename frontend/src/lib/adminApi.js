@@ -85,4 +85,14 @@ export const adminActivityLogsAPI = {
   getProfessorReport: () => adminApi.get('/api/admin/activity-logs/professor-report'),
 };
 
+export const adminStudentReportsAPI = {
+  getOverview: () => adminApi.get('/api/admin/student-reports/overview'),
+  getEnrollments: (params) => adminApi.get('/api/admin/student-reports/enrollments', { params }),
+  getPopularCourses: (params) => adminApi.get('/api/admin/student-reports/popular-courses', { params }),
+  getActiveStudents: (params) => adminApi.get('/api/admin/student-reports/active-students', { params }),
+  getByFaculty: () => adminApi.get('/api/admin/student-reports/by-faculty'),
+  getCoursesWithoutStudents: () => adminApi.get('/api/admin/student-reports/courses-without-students'),
+  exportEnrollments: () => adminApi.get('/api/admin/student-reports/export'),
+};
+
 export default adminApi;

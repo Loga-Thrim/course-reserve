@@ -43,11 +43,34 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
           seenBookIds.add(book.Id);
           
           try {
+            // Parse CatDate from API response (format: YYMMDD)
+            // Pattern: 19-25 = CE year 2019-2025, 62-68 = BE year 2562-2568 (CE 2019-2025)
+            let catDate = null;
+            if (book.CatDate && book.CatDate.length === 6) {
+              const yearShort = parseInt(book.CatDate.substring(0, 2), 10);
+              const month = parseInt(book.CatDate.substring(2, 4), 10);
+              const day = parseInt(book.CatDate.substring(4, 6), 10);
+              
+              let yearCE;
+              if (yearShort >= 50) {
+                // Buddhist Era: 62 = 2562 BE = 2019 CE
+                yearCE = 2500 + yearShort - 543;
+              } else {
+                // Christian Era: 19 = 2019, 24 = 2024, 25 = 2025
+                yearCE = 2000 + yearShort;
+              }
+              
+              catDate = new Date(yearCE, month - 1, day);
+              if (isNaN(catDate.getTime())) {
+                catDate = null;
+              }
+            }
+            
             await client.query(
               `INSERT INTO course_recommended_books 
-               (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang, keyword_source)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-               ON CONFLICT (course_id, book_id) DO NOTHING`,
+               (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang, keyword_source, cat_date)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+               ON CONFLICT (course_id, book_id) DO UPDATE SET cat_date = EXCLUDED.cat_date`,
               [
                 courseId,
                 book.Id,
@@ -59,7 +82,8 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
                 book.Bookcover,
                 book.MattypeName,
                 book.Lang,
-                keyword
+                keyword,
+                catDate
               ]
             );
             booksAdded++;

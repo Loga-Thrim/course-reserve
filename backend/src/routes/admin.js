@@ -7,6 +7,7 @@ const adminCurriculumsController = require('../controllers/admin/curriculumsCont
 const adminCourseBooksController = require('../controllers/admin/courseBooksController');
 const reportController = require('../controllers/admin/reportController');
 const activityLogController = require('../controllers/admin/activityLogController');
+const studentReportController = require('../controllers/admin/studentReportController');
 
 router.use(adminAuth);
 
@@ -44,5 +45,14 @@ router.get('/activity-logs/filters', activityLogController.getFilterOptions);
 router.get('/activity-logs/export', activityLogController.exportLogs);
 router.get('/activity-logs/student-report', activityLogController.getStudentReport);
 router.get('/activity-logs/professor-report', activityLogController.getProfessorReport);
+
+// Student enrollment reports
+router.get('/student-reports/overview', studentReportController.getOverview);
+router.get('/student-reports/enrollments', studentReportController.getEnrollments);
+router.get('/student-reports/popular-courses', studentReportController.getPopularCourses);
+router.get('/student-reports/active-students', studentReportController.getActiveStudents);
+router.get('/student-reports/by-faculty', studentReportController.getEnrollmentByFaculty);
+router.get('/student-reports/courses-without-students', studentReportController.getCoursesWithoutStudents);
+router.get('/student-reports/export', studentReportController.exportEnrollments);
 
 module.exports = router;

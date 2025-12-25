@@ -496,34 +496,34 @@ export default function CourseRegistrationPage() {
                     </select>
                   </div>
 
-                  {/* 3. Thai Code */}
+                  {/* 3. English Code */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      รหัสวิชา (ไทย) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="code_th"
-                      required
-                      value={formData.code_th}
-                      onChange={handleInputChange}
-                      className="input-field w-full"
-                      placeholder="ตัวอย่าง วท102"
-                    />
-                  </div>
-
-                  {/* English Code */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      รหัสวิชา (อังกฤษ)
+                      รหัสวิชา (อังกฤษ) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="code_en"
+                      required
                       value={formData.code_en}
                       onChange={handleInputChange}
                       className="input-field w-full"
                       placeholder="example CS102"
+                    />
+                  </div>
+
+                  {/* Thai Code */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      รหัสวิชา (ไทย)
+                    </label>
+                    <input
+                      type="text"
+                      name="code_th"
+                      value={formData.code_th}
+                      onChange={handleInputChange}
+                      className="input-field w-full"
+                      placeholder="ตัวอย่าง วท102"
                     />
                   </div>
 

@@ -4,13 +4,16 @@ import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useSearchParams } from "next/navigation";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseBooksAPI } from "../../../lib/professorApi";
-import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi";
+import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar, FiCalendar, FiMapPin, FiHash } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 const ITEMS_PER_PAGE = 12;
 
-const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false }) => (
-  <div className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'}`}>
+const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false, onShowDetail }) => (
+  <div 
+    className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 cursor-pointer ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'}`}
+    onClick={() => onShowDetail && onShowDetail(book)}
+  >
     <div className="flex gap-4">
       <div className="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
         {isAdminRecommended && (
@@ -55,7 +58,7 @@ const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, o
         <div className="mt-2 flex gap-2">
           {showAddButton && !isAdded && (
             <button
-              onClick={() => onAdd(book)}
+              onClick={(e) => { e.stopPropagation(); onAdd(book); }}
               disabled={isAdding}
               className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs rounded-lg hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50"
             >
@@ -74,7 +77,7 @@ const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, o
           )}
           {showRemoveButton && (
             <button
-              onClick={() => onRemove(book.id)}
+              onClick={(e) => { e.stopPropagation(); onRemove(book.id); }}
               className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100 transition-all flex items-center gap-1"
             >
               <FiTrash2 />
@@ -105,10 +108,30 @@ export default function CourseBooksPage() {
   const [addingBook, setAddingBook] = useState(null);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+
+  // Check auth before fetching data
+  useEffect(() => {
+    const token = localStorage.getItem('professorToken');
+    const user = localStorage.getItem('professorUser');
+    if (token && user) {
+      try {
+        const parsedUser = JSON.parse(user);
+        if (parsedUser.role === 'professor' || parsedUser.role === 'admin') {
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error('Error parsing user:', e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    fetchMyCourses();
-  }, []);
+    if (isAuthenticated) {
+      fetchMyCourses();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (selectedCourse) {
@@ -402,6 +425,7 @@ export default function CourseBooksPage() {
                           onAdd={handleAddBook}
                           isAdded={isBookAdded(book.id)}
                           isAdding={addingBook === book.id}
+                          onShowDetail={setSelectedBook}
                         />
                       ))}
                     </div>
@@ -467,6 +491,7 @@ export default function CourseBooksPage() {
                           onAdd={handleAddBook}
                           isAdded={isBookAdded(book.id)}
                           isAdding={addingBook === book.id}
+                          onShowDetail={setSelectedBook}
                         />
                       ))}
                     </div>
@@ -519,6 +544,197 @@ export default function CourseBooksPage() {
           </div>
         )}
       </div>
+    {/* Book Detail Modal */}
+      {selectedBook && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedBook(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50">
+              <h3 className="font-bold text-gray-800">รายละเอียดหนังสือ</h3>
+              <button
+                onClick={() => setSelectedBook(null)}
+                className="p-2 hover:bg-white/80 rounded-lg transition-colors"
+              >
+                <FiX className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex gap-6">
+                {/* Book Cover */}
+                <div className="w-32 h-44 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-md">
+                  {selectedBook.bookcover ? (
+                    <img
+                      src={selectedBook.bookcover}
+                      alt={selectedBook.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full ${selectedBook.bookcover ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-100`}>
+                    <FiBook className="text-4xl text-emerald-400" />
+                  </div>
+                </div>
+
+                {/* Book Info */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-lg font-bold text-gray-800 mb-2 leading-tight">
+                    {selectedBook.title}
+                  </h4>
+                  
+                  {selectedBook.admin_recommended && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full mb-3">
+                      <FiStar className="text-amber-500" />
+                      แนะนำโดย Admin
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="mt-6 space-y-4">
+                {selectedBook.author && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 text-sm">👤</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">ผู้แต่ง</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.author}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.publisher && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-600 text-sm">🏢</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">สำนักพิมพ์</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.publisher}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.callnumber && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FiMapPin className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">เลขเรียกหนังสือ</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.callnumber}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.isbn && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FiHash className="text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">ISBN</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.isbn}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.mattypeName && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FiBook className="text-pink-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">ประเภท</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.mattypeName}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.lang && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-cyan-600 text-sm">🌐</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">ภาษา</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.lang}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.cat_date && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FiCalendar className="text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">วันที่ลงรายการ</p>
+                      <p className="text-sm text-gray-800 font-medium">
+                        {new Date(selectedBook.cat_date).toLocaleDateString('th-TH', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBook.keyword_source && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FiSearch className="text-violet-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">คำค้นหาที่พบ</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedBook.keyword_source}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 flex gap-3">
+              {!isBookAdded(selectedBook.id) ? (
+                <button
+                  onClick={() => {
+                    handleAddBook(selectedBook);
+                    setSelectedBook(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-medium"
+                >
+                  <FiPlus />
+                  เพิ่มในรายวิชา
+                </button>
+              ) : (
+                <span className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-xl text-center font-medium">
+                  เพิ่มในรายวิชาแล้ว
+                </span>
+              )}
+              <button
+                onClick={() => setSelectedBook(null)}
+                className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-medium"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProfessorLayout>
   );
 }

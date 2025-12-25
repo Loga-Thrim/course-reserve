@@ -11,9 +11,11 @@ const professorApi = axios.create({
 
 professorApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('professorToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('professorToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -25,10 +27,16 @@ professorApi.interceptors.request.use(
 professorApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('professorToken');
-      localStorage.removeItem('professorUser');
-      window.location.href = '/professor/login';
+    // Only redirect on 401 if we're in browser and it's not during initial load
+    if (typeof window !== 'undefined' && error.response?.status === 401) {
+      // Check if token exists - if not, it's likely a timing issue during hydration
+      const token = localStorage.getItem('professorToken');
+      if (token) {
+        // Token exists but got 401 - token is invalid, clear and redirect
+        localStorage.removeItem('professorToken');
+        localStorage.removeItem('professorUser');
+        window.location.href = '/professor/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -8,6 +8,7 @@ const facultiesRoutes = require('./routes/faculties');
 const adminRoutes = require('./routes/admin');
 const professorRoutes = require('./routes/professor');
 const courseBooksRoutes = require('./routes/courseBooks');
+const studentRoutes = require('./routes/student');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.use('/api/faculties', facultiesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/professor', professorRoutes);
 app.use('/api/course-books', courseBooksRoutes);
+app.use('/api/student', studentRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
