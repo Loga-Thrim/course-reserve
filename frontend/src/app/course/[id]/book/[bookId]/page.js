@@ -86,7 +86,7 @@ export default function BookDetailPage() {
           <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
             <FiArrowLeft />
           </div>
-          <span className="font-medium">กลับไปรายวิชา {course?.code_th}</span>
+          <span className="font-medium">กลับไปรายวิชา {course?.code_en || course?.code_th}</span>
         </Link>
 
         {/* Book Detail Card */}

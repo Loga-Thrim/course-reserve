@@ -362,10 +362,10 @@ export default function CourseRegistrationPage() {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-800 mb-0.5">
-                        {course.code_th} - {course.name_th}
+                        {course.code_en || course.code_th} - {course.name_th}
                       </h3>
                       <p className="text-gray-500 text-xs">
-                        {course.code_en} - {course.name_en}
+                        {course.code_th && course.code_en ? course.code_th : ''} {course.name_en ? `- ${course.name_en}` : ''}
                       </p>
                     </div>
                     <div className="flex gap-1 ml-2">

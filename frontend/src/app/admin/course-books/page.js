@@ -253,7 +253,7 @@ export default function AdminCourseBooksPage() {
               className="w-full sm:w-[500px] px-4 py-3 bg-white border-2 border-emerald-100 rounded-xl text-left flex items-center justify-between hover:border-emerald-400 transition-all"
             >
               <span className="truncate">
-                {selectedCourse ? `${selectedCourse.code_th} - ${selectedCourse.name_th}` : "เลือกรายวิชา"}
+                {selectedCourse ? `${selectedCourse.code_en || selectedCourse.code_th} - ${selectedCourse.name_th}` : "เลือกรายวิชา"}
               </span>
               <div className="flex items-center gap-2">
                 {selectedCourse?.admin_books_count > 0 && (
@@ -292,7 +292,7 @@ export default function AdminCourseBooksPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-sm">{course.code_th} - {course.name_th}</p>
+                          <p className="font-medium text-sm">{course.code_en || course.code_th} - {course.name_th}</p>
                           <p className="text-xs text-gray-500">{course.curriculum_th}</p>
                         </div>
                         {course.admin_books_count > 0 && (
@@ -319,9 +319,9 @@ export default function AdminCourseBooksPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    {selectedCourse.code_th} - {selectedCourse.name_th}
+                    {selectedCourse.code_en || selectedCourse.code_th} - {selectedCourse.name_th}
                   </h2>
-                  <p className="text-sm text-gray-500">{selectedCourse.code_en} - {selectedCourse.name_en}</p>
+                  <p className="text-sm text-gray-500">{selectedCourse.code_th && selectedCourse.code_en ? selectedCourse.code_th : ''} {selectedCourse.name_en ? `- ${selectedCourse.name_en}` : ''}</p>
                 </div>
               </div>
 

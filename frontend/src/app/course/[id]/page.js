@@ -120,10 +120,10 @@ export default function CourseDetailPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold">
-              {course.code_th}
+              {course.code_en || course.code_th}
             </span>
-            {course.code_en && (
-              <span className="text-xs text-gray-400">{course.code_en}</span>
+            {course.code_th && course.code_en && (
+              <span className="text-xs text-gray-400">{course.code_th}</span>
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-1">{course.name_th}</h1>

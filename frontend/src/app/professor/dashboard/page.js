@@ -172,7 +172,7 @@ export default function ProfessorDashboardPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 truncate">
-                          {course.code_th}
+                          {course.code_en || course.code_th}
                         </p>
                         <p className="text-sm text-gray-500 truncate">
                           {course.name_th}
@@ -232,7 +232,7 @@ export default function ProfessorDashboardPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 truncate">
-                          {course.code_th}
+                          {course.code_en || course.code_th}
                         </p>
                         <p className="text-sm text-gray-500 truncate">
                           {course.name_th}

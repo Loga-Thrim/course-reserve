@@ -196,10 +196,10 @@ export default function HomePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                        {course.code_th}
+                        {course.code_en || course.code_th}
                       </span>
-                      {course.code_en && (
-                        <span className="text-xs text-gray-400">{course.code_en}</span>
+                      {course.code_th && course.code_en && (
+                        <span className="text-xs text-gray-400">{course.code_th}</span>
                       )}
                     </div>
                     <h3 className="font-semibold text-gray-800 line-clamp-2 mb-1">
@@ -324,7 +324,7 @@ export default function HomePage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                                {course.code_th}
+                                {course.code_en || course.code_th}
                               </span>
                               {course.faculty_name && (
                                 <span className="text-xs text-gray-400">{course.faculty_name}</span>

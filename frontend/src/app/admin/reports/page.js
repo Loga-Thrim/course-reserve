@@ -672,7 +672,7 @@ export default function AdminReportsPage() {
                       <tbody className="divide-y divide-gray-100">
                         {courseReport.map((row, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{row.code_th}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{row.code_en || row.code_th}</td>
                             <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{row.name_th}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{row.faculty_name || "-"}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{row.curriculum_name || "-"}</td>
@@ -845,7 +845,7 @@ export default function AdminReportsPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-800 truncate">{course.name_th}</p>
-                              <p className="text-xs text-gray-500">{course.code_th} • {course.faculty_name}</p>
+                              <p className="text-xs text-gray-500">{course.code_en || course.code_th} • {course.faculty_name}</p>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-emerald-600">{course.student_count}</p>
@@ -1056,7 +1056,7 @@ export default function AdminReportsPage() {
                           <tr key={course.id} className="border-b border-gray-50 hover:bg-gray-50">
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                                {course.code_th}
+                                {course.code_en || course.code_th}
                               </span>
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-800">{course.name_th}</td>

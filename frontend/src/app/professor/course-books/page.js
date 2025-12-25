@@ -315,7 +315,7 @@ export default function CourseBooksPage() {
               className="w-full sm:w-96 px-4 py-3 bg-white border-2 border-emerald-100 rounded-xl text-left flex items-center justify-between hover:border-emerald-400 transition-all"
             >
               <span className="truncate">
-                {selectedCourse ? `${selectedCourse.code_th} - ${selectedCourse.name_th}` : "เลือกรายวิชา"}
+                {selectedCourse ? `${selectedCourse.code_en || selectedCourse.code_th} - ${selectedCourse.name_th}` : "เลือกรายวิชา"}
               </span>
               <FiChevronDown className={`transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`} />
             </button>
@@ -334,7 +334,7 @@ export default function CourseBooksPage() {
                       selectedCourse?.id === course.id ? 'bg-emerald-50 text-emerald-700' : ''
                     }`}
                   >
-                    <p className="font-medium text-sm">{course.code_th} - {course.name_th}</p>
+                    <p className="font-medium text-sm">{course.code_en || course.code_th} - {course.name_th}</p>
                     <p className="text-xs text-gray-500">{course.curriculum_th}</p>
                   </button>
                 ))}
