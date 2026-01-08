@@ -10,7 +10,7 @@ export default function AdminSidebar({ onLogout, onClose }) {
   const menuItems = [
     { href: "/admin/dashboard", icon: FiHome, label: "แดชบอร์ด" },
     { href: "/admin/users", icon: FiUsers, label: "จัดการผู้ใช้" },
-    { href: "/admin/course-books", icon: FiBookOpen, label: "คลังหนังสือประจำวิชา" },
+    { href: "/admin/course-books", icon: FiBookOpen, label: "ทรัพยากรประจำวิชา" },
     { href: "/admin/reports", icon: FiFileText, label: "รายงาน" },
     { href: "/admin/activity-logs", icon: FiActivity, label: "บันทึกกิจกรรม" },
   ];
@@ -25,8 +25,8 @@ export default function AdminSidebar({ onLogout, onClose }) {
               <FiBook className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-800">Admin Panel</h1>
-              <p className="text-xs text-gray-500">ระบบผู้ดูแล</p>
+              <h1 className="text-lg font-bold text-gray-800">คลังทรัพยากร</h1>
+              <p className="text-xs text-gray-500">Course Reserve Online</p>
             </div>
           </div>
           {/* Mobile Close Button */}

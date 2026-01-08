@@ -70,9 +70,9 @@ export default function ProfessorLoginPage() {
             <FiBook className="text-3xl text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            ทรัพยากรสำรองรายวิชา
+            คลังทรัพยากรสนับสนุนหลักสูตร
           </h1>
-          <p className="text-emerald-50">Book Recommendation System</p>
+          <p className="text-emerald-50">Course Reserve Online</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-emerald-100">

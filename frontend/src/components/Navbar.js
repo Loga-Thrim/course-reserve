@@ -20,7 +20,7 @@ export default function Navbar() {
             <div className="bg-brand p-2 rounded-lg">
               <FiBook className="text-white text-xl" />
             </div>
-            <span className="text-xl font-bold text-brand">BookRec</span>
+            <span className="text-xl font-bold text-brand">Course Reserve</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -33,7 +33,7 @@ export default function Navbar() {
                   : 'text-gray-600 hover:text-brand'
               }`}
             >
-              หนังสือประจำวิชา
+              ทรัพยากรประจำวิชา
             </Link>
 
             {/* User Info and Logout */}
@@ -78,7 +78,7 @@ export default function Navbar() {
                     : 'text-gray-600 hover:text-brand'
                 }`}
               >
-                หนังสือประจำวิชา
+                ทรัพยากรประจำวิชา
               </Link>
 
               {user && (

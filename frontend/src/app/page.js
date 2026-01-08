@@ -164,12 +164,12 @@ export default function HomePage() {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
             <div className="relative flex items-center justify-between">
               <div>
-                <p className="text-emerald-100 text-sm font-medium mb-1 tracking-wide">COURSE RESERVE</p>
+                <p className="text-emerald-100 text-sm font-medium mb-1 tracking-wide">คลังทรัพยากรสนับสนุนหลักสูตรออนไลน์</p>
                 <h1 className="text-2xl font-bold text-white mb-2">
                   สวัสดี, {user?.name || "นักศึกษา"} 👋
                 </h1>
                 <p className="text-emerald-100/80 text-sm">
-                  เลือกรายวิชาที่คุณลงทะเบียนเพื่อดูหนังสือประจำวิชา
+                  ค้นหาหนังสือและทรัพยากรประกอบรายวิชาที่คุณลงทะเบียน
                 </p>
               </div>
               <div className="hidden sm:flex items-center gap-6">

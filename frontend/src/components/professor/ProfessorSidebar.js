@@ -10,7 +10,7 @@ export default function ProfessorSidebar({ onLogout, onClose }) {
   const menuItems = [
     { href: "/professor/dashboard", icon: FiHome, label: "แดชบอร์ด", color: "blue" },
     { href: "/professor/course-registration", icon: FiGrid, label: "ลงทะเบียนรายวิชา", color: "purple" },
-    { href: "/professor/course-books", icon: FiBookOpen, label: "คลังหนังสือประจำวิชา", color: "teal" },
+    { href: "/professor/course-books", icon: FiBookOpen, label: "ทรัพยากรประจำวิชา", color: "teal" },
   ];
 
   return (
@@ -23,8 +23,8 @@ export default function ProfessorSidebar({ onLogout, onClose }) {
               <FiAward className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-800">ทรัพยากรสำรองรายวิชา</h1>
-              <p className="text-xs text-gray-500">Course Reserves</p>
+              <h1 className="text-lg font-bold text-gray-800">คลังทรัพยากร</h1>
+              <p className="text-xs text-gray-500">Course Reserve Online</p>
             </div>
           </div>
           {/* Mobile Close Button */}

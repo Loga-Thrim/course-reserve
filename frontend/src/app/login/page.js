@@ -54,10 +54,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
-            ยินดีต้อนรับกลับมา
+            คลังทรัพยากรสนับสนุนหลักสูตร
           </h2>
           <p className="text-gray-600 text-sm">
-            เข้าสู่ระบบเพื่อค้นหาหนังสือเล่มถัดไปของคุณ
+            เข้าสู่ระบบเพื่อค้นหาทรัพยากรประกอบรายวิชาของคุณ
           </p>
         </div>
 

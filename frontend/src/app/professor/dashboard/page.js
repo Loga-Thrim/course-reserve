@@ -81,8 +81,8 @@ export default function ProfessorDashboardPage() {
       color: "emerald",
     },
     {
-      title: "จัดการหนังสือ",
-      description: "เพิ่มหนังสือสำรองให้รายวิชา",
+      title: "จัดการทรัพยากร",
+      description: "เพิ่มทรัพยากรประกอบรายวิชา",
       icon: FiBook,
       href: "/professor/course-books",
       color: "blue",
@@ -108,7 +108,7 @@ export default function ProfessorDashboardPage() {
             สวัสดี, {user?.name || "อาจารย์"}
           </h1>
           <p className="text-emerald-100 text-sm sm:text-base">
-            ยินดีต้อนรับสู่ระบบทรัพยากรสำรองรายวิชา
+            ยินดีต้อนรับสู่คลังทรัพยากรสนับสนุนหลักสูตรออนไลน์
           </p>
           {user?.role === 'admin' && (
             <span className="inline-block mt-2 px-3 py-1 bg-white/20 rounded-full text-xs font-medium">

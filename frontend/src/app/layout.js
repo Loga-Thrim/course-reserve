@@ -6,8 +6,8 @@ import { Toaster } from 'react-hot-toast';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Course Reserve',
-  description: 'Course Reserve',
+  title: 'คลังทรัพยากรสนับสนุนหลักสูตรออนไลน์ | Course Reserve Online',
+  description: 'ระบบคลังทรัพยากรสนับสนุนหลักสูตรออนไลน์ สำหรับค้นหาหนังสือและสื่อการเรียนรู้ประกอบรายวิชา',
 };
 
 export default function RootLayout({ children }) {

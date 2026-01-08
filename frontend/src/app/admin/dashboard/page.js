@@ -78,7 +78,7 @@ export default function CMSDashboardPage() {
       gradient: "from-teal-500 to-teal-600",
     },
     {
-      title: "หนังสือทั้งหมด",
+      title: "ทรัพยากรทั้งหมด",
       value: stats.totalBooks,
       icon: FiBook,
       color: "cyan",

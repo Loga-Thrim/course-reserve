@@ -103,7 +103,7 @@ export default function ProfessorLayout({ children }) {
               >
                 <FiMenu className="text-2xl text-gray-600" />
               </button>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">ทรัพยากรสำรองรายวิชา</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">คลังทรัพยากรสนับสนุนหลักสูตร</h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="text-right hidden sm:block">

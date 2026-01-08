@@ -58,9 +58,9 @@ export default function CMSLoginPage() {
             <FiShield className="text-3xl text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            ระบบจัดการ (Admin)
+            คลังทรัพยากรสนับสนุนหลักสูตร
           </h1>
-          <p className="text-emerald-50">Book Recommendation System</p>
+          <p className="text-emerald-50">Course Reserve Online - Admin</p>
         </div>
 
         {/* Login Form */}
