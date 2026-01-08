@@ -4,17 +4,27 @@ import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useSearchParams } from "next/navigation";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseBooksAPI } from "../../../lib/professorApi";
-import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar, FiCalendar, FiMapPin, FiHash } from "react-icons/fi";
+import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiX, FiLoader, FiZap, FiChevronLeft, FiChevronRight, FiStar, FiCalendar, FiMapPin, FiHash, FiCheck, FiSquare, FiCheckSquare, FiDownload, FiFileText } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 const ITEMS_PER_PAGE = 12;
 
-const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false, onShowDetail }) => (
+const BookCard = memo(({ book, showAddButton = true, showRemoveButton = false, onAdd, onRemove, isAdded, isAdding, isAdminRecommended = false, onShowDetail, showCheckbox = false, isSelected = false, onToggleSelect }) => (
   <div 
-    className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 cursor-pointer ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'}`}
+    className={`rounded-xl border shadow-sm hover:shadow-md transition-all p-4 cursor-pointer ${isAdminRecommended ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-gray-100'} ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : ''}`}
     onClick={() => onShowDetail && onShowDetail(book)}
   >
     <div className="flex gap-4">
+      {showCheckbox && (
+        <div className="flex items-start pt-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleSelect && onToggleSelect(book); }}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-emerald-400'}`}
+          >
+            {isSelected && <FiCheck className="text-xs" />}
+          </button>
+        </div>
+      )}
       <div className="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
         {isAdminRecommended && (
           <div className="absolute top-1 left-1 z-10 p-1 bg-amber-500 rounded-full">
@@ -110,6 +120,12 @@ export default function CourseBooksPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  
+  // Multi-select states
+  const [selectedSearchBooks, setSelectedSearchBooks] = useState(new Set());
+  const [selectedCourseBooks, setSelectedCourseBooks] = useState(new Set());
+  const [addingMultiple, setAddingMultiple] = useState(false);
+  const [removingMultiple, setRemovingMultiple] = useState(false);
 
   // Check auth before fetching data
   useEffect(() => {
@@ -266,6 +282,7 @@ export default function CourseBooksPage() {
     try {
       setLoadingSearch(true);
       setSearchResults([]);
+      setSelectedSearchBooks(new Set()); // Clear selection on new search
       const response = await professorCourseBooksAPI.searchBooks(searchKeyword.trim());
       setSearchResults(response.data.books || []);
     } catch (error) {
@@ -274,6 +291,196 @@ export default function CourseBooksPage() {
       setLoadingSearch(false);
     }
   };
+
+  // Multi-select handlers for search results
+  const toggleSearchBookSelect = useCallback((book) => {
+    setSelectedSearchBooks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(book.id)) {
+        newSet.delete(book.id);
+      } else {
+        newSet.add(book.id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const selectAllSearchBooks = useCallback(() => {
+    const notAddedBooks = searchResults.filter(book => !isBookAdded(book.id));
+    if (selectedSearchBooks.size === notAddedBooks.length) {
+      setSelectedSearchBooks(new Set());
+    } else {
+      setSelectedSearchBooks(new Set(notAddedBooks.map(book => book.id)));
+    }
+  }, [searchResults, selectedSearchBooks.size, isBookAdded]);
+
+  const handleAddSelectedBooks = useCallback(async () => {
+    if (!selectedCourse || selectedSearchBooks.size === 0) return;
+    
+    const booksToAdd = searchResults.filter(book => selectedSearchBooks.has(book.id) && !isBookAdded(book.id));
+    if (booksToAdd.length === 0) return;
+
+    try {
+      setAddingMultiple(true);
+      let successCount = 0;
+      
+      for (const book of booksToAdd) {
+        try {
+          await professorCourseBooksAPI.addBookToCourse(selectedCourse.id, {
+            book_id: book.id,
+            title: book.title,
+            author: book.author,
+            publisher: book.publisher,
+            callnumber: book.callnumber,
+            isbn: book.isbn,
+            bookcover: book.bookcover
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Error adding book ${book.id}:`, error);
+        }
+      }
+      
+      fetchCourseBooks();
+      setSelectedSearchBooks(new Set());
+      toast.success(`เพิ่มหนังสือ ${successCount} เล่มเรียบร้อยแล้ว`);
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มหนังสือ");
+    } finally {
+      setAddingMultiple(false);
+    }
+  }, [selectedCourse, selectedSearchBooks, searchResults, isBookAdded]);
+
+  // Multi-select handlers for course books
+  const toggleCourseBookSelect = useCallback((book) => {
+    setSelectedCourseBooks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(book.id)) {
+        newSet.delete(book.id);
+      } else {
+        newSet.add(book.id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const selectAllCourseBooks = useCallback(() => {
+    if (selectedCourseBooks.size === courseBooks.length) {
+      setSelectedCourseBooks(new Set());
+    } else {
+      setSelectedCourseBooks(new Set(courseBooks.map(book => book.id)));
+    }
+  }, [courseBooks, selectedCourseBooks.size]);
+
+  const handleRemoveSelectedBooks = useCallback(async () => {
+    if (!selectedCourse || selectedCourseBooks.size === 0) return;
+    if (!confirm(`ต้องการลบหนังสือ ${selectedCourseBooks.size} เล่มออกจากรายวิชานี้หรือไม่?`)) return;
+
+    try {
+      setRemovingMultiple(true);
+      let successCount = 0;
+      
+      for (const bookId of selectedCourseBooks) {
+        try {
+          await professorCourseBooksAPI.removeBookFromCourse(selectedCourse.id, bookId);
+          successCount++;
+        } catch (error) {
+          console.error(`Error removing book ${bookId}:`, error);
+        }
+      }
+      
+      fetchCourseBooks();
+      setSelectedCourseBooks(new Set());
+      toast.success(`ลบหนังสือ ${successCount} เล่มเรียบร้อยแล้ว`);
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการลบหนังสือ");
+    } finally {
+      setRemovingMultiple(false);
+    }
+  }, [selectedCourse, selectedCourseBooks]);
+
+  // Export functions
+  const exportToCSV = useCallback(() => {
+    if (!selectedCourse || courseBooks.length === 0) return;
+    
+    const headers = ['ลำดับ', 'ชื่อหนังสือ', 'ผู้แต่ง', 'สำนักพิมพ์', 'เลขเรียกหนังสือ', 'ISBN'];
+    const rows = courseBooks.map((book, index) => [
+      index + 1,
+      `"${(book.title || '').replace(/"/g, '""')}"`,
+      `"${(book.author || '').replace(/"/g, '""')}"`,
+      `"${(book.publisher || '').replace(/"/g, '""')}"`,
+      `"${(book.callnumber || '').replace(/"/g, '""')}"`,
+      `"${(book.isbn || '').replace(/"/g, '""')}"`
+    ]);
+    
+    const BOM = '\uFEFF';
+    const csvContent = BOM + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `หนังสือรายวิชา_${selectedCourse.code_en || selectedCourse.code_th}_${new Date().toLocaleDateString('th-TH')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว');
+  }, [selectedCourse, courseBooks]);
+
+  const exportToExcel = useCallback(() => {
+    if (!selectedCourse || courseBooks.length === 0) return;
+    
+    const courseInfo = `รายการหนังสือประจำรายวิชา: ${selectedCourse.code_en || selectedCourse.code_th} - ${selectedCourse.name_th}`;
+    const exportDate = `วันที่ส่งออก: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+    const totalBooks = `จำนวนหนังสือทั้งหมด: ${courseBooks.length} เล่ม`;
+    
+    const headers = ['ลำดับ', 'ชื่อหนังสือ', 'ผู้แต่ง', 'สำนักพิมพ์', 'เลขเรียกหนังสือ', 'ISBN'];
+    const rows = courseBooks.map((book, index) => [
+      index + 1,
+      book.title || '',
+      book.author || '',
+      book.publisher || '',
+      book.callnumber || '',
+      book.isbn || ''
+    ]);
+    
+    // Create HTML table for Excel
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>หนังสือรายวิชา</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+      <body>
+        <table>
+          <tr><td colspan="6" style="font-size:16px;font-weight:bold;">${courseInfo}</td></tr>
+          <tr><td colspan="6">${exportDate}</td></tr>
+          <tr><td colspan="6">${totalBooks}</td></tr>
+          <tr><td colspan="6"></td></tr>
+          <tr style="background-color:#10b981;color:white;font-weight:bold;">
+            ${headers.map(h => `<td style="padding:8px;border:1px solid #ccc;">${h}</td>`).join('')}
+          </tr>
+          ${rows.map((row, idx) => `
+            <tr style="background-color:${idx % 2 === 0 ? '#f0fdf4' : 'white'}">
+              ${row.map((cell, cellIdx) => `<td style="padding:6px;border:1px solid #e5e7eb;${cellIdx === 0 ? 'text-align:center;' : ''}">${cell}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </table>
+      </body>
+      </html>
+    `;
+    
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `หนังสือรายวิชา_${selectedCourse.code_en || selectedCourse.code_th}_${new Date().toLocaleDateString('th-TH')}.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
+  }, [selectedCourse, courseBooks]);
 
   if (loading) {
     return (
@@ -481,6 +688,36 @@ export default function CourseBooksPage() {
                     {loadingSearch ? <FiLoader className="animate-spin" /> : <FiSearch />}
                   </button>
                 </form>
+                
+                {/* Multi-select toolbar for search results */}
+                {searchResults.length > 0 && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
+                    <button
+                      onClick={selectAllSearchBooks}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 rounded-lg transition-all"
+                    >
+                      {selectedSearchBooks.size === searchResults.filter(b => !isBookAdded(b.id)).length && selectedSearchBooks.size > 0 ? (
+                        <><FiCheckSquare /> ยกเลิกทั้งหมด</>
+                      ) : (
+                        <><FiSquare /> เลือกทั้งหมด</>
+                      )}
+                    </button>
+                    {selectedSearchBooks.size > 0 && (
+                      <>
+                        <span className="text-xs text-blue-600">เลือก {selectedSearchBooks.size} รายการ</span>
+                        <button
+                          onClick={handleAddSelectedBooks}
+                          disabled={addingMultiple}
+                          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-md transition-all disabled:opacity-50"
+                        >
+                          {addingMultiple ? <FiLoader className="animate-spin" /> : <FiPlus />}
+                          เพิ่มที่เลือก
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                
                 <div className="flex-1 overflow-y-auto bg-blue-50/30 rounded-lg p-3 -mx-1">
                   {searchResults.length > 0 ? (
                     <div className="space-y-3">
@@ -492,6 +729,9 @@ export default function CourseBooksPage() {
                           isAdded={isBookAdded(book.id)}
                           isAdding={addingBook === book.id}
                           onShowDetail={setSelectedBook}
+                          showCheckbox={true}
+                          isSelected={selectedSearchBooks.has(book.id)}
+                          onToggleSelect={toggleSearchBookSelect}
                         />
                       ))}
                     </div>
@@ -505,10 +745,64 @@ export default function CourseBooksPage() {
 
               {/* Course Books */}
               <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow-md border border-emerald-100/50 p-6 flex flex-col h-[600px]">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FiBook className="text-emerald-600" />
-                  หนังสือในรายวิชา ({courseBooks.length})
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <FiBook className="text-emerald-600" />
+                    หนังสือในรายวิชา ({courseBooks.length})
+                  </h2>
+                  
+                  {/* Export Buttons */}
+                  {courseBooks.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={exportToCSV}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                        title="ส่งออกเป็น CSV"
+                      >
+                        <FiFileText className="text-green-600" />
+                        CSV
+                      </button>
+                      <button
+                        onClick={exportToExcel}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                        title="ส่งออกเป็น Excel"
+                      >
+                        <FiDownload className="text-emerald-600" />
+                        Excel
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Multi-select toolbar for course books */}
+                {courseBooks.length > 0 && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-emerald-50 rounded-lg">
+                    <button
+                      onClick={selectAllCourseBooks}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 rounded-lg transition-all"
+                    >
+                      {selectedCourseBooks.size === courseBooks.length && selectedCourseBooks.size > 0 ? (
+                        <><FiCheckSquare /> ยกเลิกทั้งหมด</>
+                      ) : (
+                        <><FiSquare /> เลือกทั้งหมด</>
+                      )}
+                    </button>
+                    {selectedCourseBooks.size > 0 && (
+                      <>
+                        <span className="text-xs text-emerald-600">เลือก {selectedCourseBooks.size} รายการ</span>
+                        <button
+                          onClick={handleRemoveSelectedBooks}
+                          disabled={removingMultiple}
+                          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all disabled:opacity-50"
+                        >
+                          {removingMultiple ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                          ลบที่เลือก
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                
                 <div className="flex-1 overflow-y-auto bg-emerald-50/30 rounded-lg p-3 -mx-1">
                   {loadingCourseBooks ? (
                     <div className="flex justify-center items-center h-full">
@@ -534,6 +828,9 @@ export default function CourseBooksPage() {
                         showAddButton={false}
                         showRemoveButton={true}
                         onRemove={() => handleRemoveBook(book.id)}
+                        showCheckbox={true}
+                        isSelected={selectedCourseBooks.has(book.id)}
+                        onToggleSelect={() => toggleCourseBookSelect(book)}
                       />
                     ))}
                     </div>
