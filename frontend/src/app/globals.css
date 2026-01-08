@@ -98,3 +98,222 @@
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
+
+.main-welcome {
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.main-welcome::before {
+  content: '';
+  position: absolute;
+  top: 45%;
+  left: 43.5%;
+  width: 200%;
+  height: 200%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: 
+    radial-gradient(2px 2px at 20% 30%, #ffd700, transparent),
+    radial-gradient(2px 2px at 40% 70%, #ffec8b, transparent),
+    radial-gradient(2px 2px at 50% 40%, #ffd700, transparent),
+    radial-gradient(2px 2px at 60% 20%, #daa520, transparent),
+    radial-gradient(2px 2px at 70% 60%, #ffd700, transparent),
+    radial-gradient(2px 2px at 80% 10%, #ffec8b, transparent),
+    radial-gradient(2px 2px at 10% 80%, #ffd700, transparent),
+    radial-gradient(2px 2px at 30% 50%, #daa520, transparent),
+    radial-gradient(2px 2px at 90% 40%, #ffd700, transparent),
+    radial-gradient(2px 2px at 15% 15%, #ffec8b, transparent),
+    radial-gradient(2px 2px at 85% 85%, #ffd700, transparent),
+    radial-gradient(2px 2px at 45% 90%, #daa520, transparent);
+  animation: warp-speed 2s linear infinite;
+}
+
+.main-welcome::after {
+  content: '';
+  position: absolute;
+  top: 45%;
+  left: 43.5%;
+  width: 300%;
+  height: 300%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: 
+    conic-gradient(
+      from 0deg at 50% 50%,
+      transparent 0deg,
+      rgba(255, 215, 0, 0.4) 15deg,
+      transparent 30deg,
+      transparent 45deg,
+      rgba(218, 165, 32, 0.4) 60deg,
+      transparent 75deg,
+      transparent 90deg,
+      rgba(255, 236, 139, 0.4) 105deg,
+      transparent 120deg,
+      transparent 135deg,
+      rgba(255, 215, 0, 0.4) 150deg,
+      transparent 165deg,
+      transparent 180deg,
+      rgba(184, 134, 11, 0.4) 195deg,
+      transparent 210deg,
+      transparent 225deg,
+      rgba(255, 215, 0, 0.4) 240deg,
+      transparent 255deg,
+      transparent 270deg,
+      rgba(218, 165, 32, 0.4) 285deg,
+      transparent 300deg,
+      transparent 315deg,
+      rgba(255, 236, 139, 0.4) 330deg,
+      transparent 345deg,
+      transparent 360deg
+    );
+  animation: warp-rotate 8s linear infinite;
+  filter: blur(30px);
+}
+
+@keyframes warp-speed {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes warp-rotate {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) scale(1.5);
+  }
+}
+
+.main-welcome .welcome-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  background: url("/images/adum.png") no-repeat center center;
+  background-size: cover;
+  border-radius: 30px;
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.8);
+}
+
+.main-welcome .welcome-container .welcome-button {
+  position: absolute;
+  top: 45%;
+  left: 43.5%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(180deg, #ffe066 0%, #e8ab12 50%, #c99700 100%);
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 16px;
+  color: white;
+  border: none;
+  border-top: 2px solid #fff5b3;
+  border-bottom: 3px solid #8b6914;
+  cursor: pointer;
+  z-index: 1;
+  transition: all 0.15s ease;
+  box-shadow: 
+    0 4px 0 #8b6914,
+    0 6px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.main-welcome .welcome-container .welcome-button::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(
+    90deg,
+    #ffd700,
+    #ffec8b,
+    #daa520,
+    #b8860b,
+    #ffd700,
+    #ffec8b,
+    #daa520,
+    #b8860b,
+    #ffd700
+  );
+  background-size: 400% 400%;
+  border-radius: 15px;
+  z-index: -1;
+  animation: glowing-border 3s linear infinite;
+  filter: blur(8px);
+  opacity: 0.9;
+}
+
+.main-welcome .welcome-container .welcome-button::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(
+    90deg,
+    #ffd700,
+    #ffec8b,
+    #daa520,
+    #b8860b,
+    #ffd700,
+    #ffec8b,
+    #daa520,
+    #b8860b,
+    #ffd700
+  );
+  background-size: 400% 400%;
+  border-radius: 14px;
+  z-index: -1;
+  animation: glowing-border 3s linear infinite;
+}
+
+.main-welcome .welcome-container .welcome-button:hover {
+  transform: translate(-50%, -50%) translateY(-2px);
+  box-shadow: 
+    0 6px 0 #8b6914,
+    0 8px 15px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 234, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.main-welcome .welcome-container .welcome-button:active {
+  transform: translate(-50%, -50%) translateY(2px);
+  box-shadow: 
+    0 2px 0 #8b6914,
+    0 3px 5px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+@keyframes glowing-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
