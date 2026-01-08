@@ -2,6 +2,7 @@
 const nextConfig = {
   images: {
     domains: ['covers.openlibrary.org'],
+    unoptimized: true,
   },
 }
 

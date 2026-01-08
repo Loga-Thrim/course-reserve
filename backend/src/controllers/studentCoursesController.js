@@ -92,14 +92,13 @@ const studentCoursesController = {
             ''
           ) as instructors,
           (SELECT COUNT(*) FROM course_books cb WHERE cb.course_id = pc.id) as book_count,
-          (SELECT COUNT(*) FROM course_files cf WHERE cf.course_id = pc.id) as file_count,
-          sc.created_at as added_at
+          (SELECT COUNT(*) FROM course_files cf WHERE cf.course_id = pc.id) as file_count
         FROM student_courses sc
         JOIN professor_courses pc ON sc.course_id = pc.id
         LEFT JOIN faculties f ON pc.faculty_id = f.id
         LEFT JOIN curriculums c ON pc.curriculum_id = c.id
         WHERE sc.student_id = $1
-        ORDER BY sc.created_at DESC
+        ORDER BY pc.name_th
       `, [studentId]);
       
       res.json(result.rows);

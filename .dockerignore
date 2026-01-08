@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.*.local
+frontend/node_modules
+frontend/.next
+frontend/out
+backend/node_modules
+backend/uploads
+*.log
+.DS_Store

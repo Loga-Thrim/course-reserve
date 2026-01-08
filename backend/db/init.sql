@@ -32,20 +32,17 @@ CREATE TABLE IF NOT EXISTS curriculums (
 -- Professor courses table
 CREATE TABLE IF NOT EXISTS professor_courses (
     id SERIAL PRIMARY KEY,
-    code_th VARCHAR(50),
-    code_en VARCHAR(50),
+    professor_id VARCHAR(50),
     name_th VARCHAR(255) NOT NULL,
     name_en VARCHAR(255),
-    credits INTEGER,
-    description TEXT,
-    curriculum_th VARCHAR(255),
-    curriculum_en VARCHAR(255),
+    code_th VARCHAR(50) NOT NULL,
+    code_en VARCHAR(50),
+    description_th TEXT NOT NULL DEFAULT '',
+    description_en TEXT,
+    website VARCHAR(500),
+    keywords TEXT[] DEFAULT '{}',
     faculty_id INTEGER REFERENCES faculties(id),
     curriculum_id INTEGER REFERENCES curriculums(id),
-    professor_id VARCHAR(100),
-    professor_name VARCHAR(255),
-    semester VARCHAR(20),
-    academic_year VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
