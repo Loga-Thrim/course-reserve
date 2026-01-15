@@ -45,6 +45,7 @@ if (process.env.NODE_ENV === 'production') {
       changeOrigin: true,
       ws: true,
     })
+    // (req, res) => res.end("==== > works")
   );
 }
 
