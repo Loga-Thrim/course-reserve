@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { authAPI } from "../lib/api";
+import { redirectTo } from "../lib/basePath";
 
 const AuthContext = createContext();
 
@@ -72,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.location.href = "/login";
+    redirectTo("/login");
   };
 
   const value = {

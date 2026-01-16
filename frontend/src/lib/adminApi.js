@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { redirectTo } from './basePath';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -28,7 +29,7 @@ adminApi.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
-      window.location.href = '/admin/login';
+      redirectTo('/admin/login');
     }
     return Promise.reject(error);
   }

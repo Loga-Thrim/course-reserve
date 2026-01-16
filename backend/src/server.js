@@ -29,7 +29,11 @@ app.use('/api/course-books', courseBooksRoutes);
 app.use('/api/student', studentRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  res.json({
+    status: 'OK',
+    message: 'Server is running',
+    data: process.env.NEXT_PUBLIC_API_URL
+  });
 });
 
 // Proxy all non-API requests to Next.js frontend
@@ -41,6 +45,7 @@ if (process.env.NODE_ENV === 'production') {
       changeOrigin: true,
       ws: true,
     })
+    // (req, res) => res.end("==== > works")
   );
 }
 

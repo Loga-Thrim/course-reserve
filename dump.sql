@@ -2,12 +2,11 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.11 (Debian 16.11-1.pgdg13+1)
--- Dumped by pg_dump version 17.4
+-- Dumped from database version 18.1
+-- Dumped by pg_dump version 18.1
 
 -- Started on 2026-01-08 13:47:57 +07
 
-SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET transaction_timeout = 0;
