@@ -5,6 +5,7 @@ import AdminLayout from "../../../components/admin/AdminLayout";
 import { adminCourseBooksAPI } from "../../../lib/adminApi";
 import { FiSearch, FiPlus, FiTrash2, FiBook, FiChevronDown, FiLoader, FiStar, FiChevronLeft, FiChevronRight, FiInfo, FiUser, FiGlobe, FiFileText } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { BASE_PATH } from "../../../lib/basePath";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -293,7 +294,10 @@ export default function AdminCourseBooksPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-sm">{course.code_en || course.code_th} - {course.name_th}</p>
-                          <p className="text-xs text-gray-500">{course.curriculum_th}</p>
+                          <p className="text-xs text-gray-500">
+                            {course.curriculum_name || ''}
+                            {course.curriculum_level && course.curriculum_name && !course.curriculum_name.includes('ศึกษาทั่วไป') ? ` (${course.curriculum_level})` : ''}
+                          </p>
                         </div>
                         {course.admin_books_count > 0 && (
                           <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">
@@ -319,7 +323,15 @@ export default function AdminCourseBooksPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    {selectedCourse.code_en || selectedCourse.code_th} - {selectedCourse.name_th}
+                    <a 
+                      href={`${BASE_PATH}/professor/course-books?courseId=${selectedCourse.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                    >
+                      {selectedCourse.code_en || selectedCourse.code_th}
+                    </a>
+                    {' - '}{selectedCourse.name_th}
                   </h2>
                   <p className="text-sm text-gray-500">{selectedCourse.code_th && selectedCourse.code_en ? selectedCourse.code_th : ''} {selectedCourse.name_en ? `- ${selectedCourse.name_en}` : ''}</p>
                 </div>
@@ -330,8 +342,8 @@ export default function AdminCourseBooksPage() {
                   <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                     <FiBook className="text-emerald-500" /> หลักสูตร
                   </p>
-                  <p className="text-sm font-medium text-gray-700">{selectedCourse.curriculum_th || '-'}</p>
-                  <p className="text-xs text-gray-500">{selectedCourse.curriculum_en || ''}</p>
+                  <p className="text-sm font-medium text-gray-700">{selectedCourse.curriculum_name || '-'}</p>
+                  <p className="text-xs text-gray-500">{selectedCourse.curriculum_level || ''}</p>
                 </div>
                 <div className="bg-white/60 rounded-lg p-4 border border-emerald-100">
                   <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">

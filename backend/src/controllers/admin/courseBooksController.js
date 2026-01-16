@@ -22,6 +22,9 @@ const adminCourseBooksController = {
 
       let query = `
         SELECT pc.*, 
+               f.name as faculty_name,
+               c.name as curriculum_name,
+               c.level as curriculum_level,
                COALESCE(
                  json_agg(
                    json_build_object('id', ci.id, 'instructor_name', ci.instructor_name)
@@ -30,6 +33,8 @@ const adminCourseBooksController = {
                ) as instructors,
                (SELECT COUNT(*) FROM course_recommended_books crb WHERE crb.course_id = pc.id AND crb.admin_recommended = true) as admin_books_count
         FROM professor_courses pc
+        LEFT JOIN faculties f ON pc.faculty_id = f.id
+        LEFT JOIN curriculums c ON pc.curriculum_id = c.id
         LEFT JOIN course_instructors ci ON pc.id = ci.course_id
       `;
 
@@ -40,7 +45,7 @@ const adminCourseBooksController = {
         query += ` WHERE pc.name_th ILIKE $1 OR pc.name_en ILIKE $1 OR pc.code_th ILIKE $1 OR pc.code_en ILIKE $1`;
       }
 
-      query += ` GROUP BY pc.id ORDER BY pc.created_at DESC`;
+      query += ` GROUP BY pc.id, f.name, c.name, c.level ORDER BY pc.created_at DESC`;
 
       const result = await pool.query(query, params);
       res.json(result.rows);

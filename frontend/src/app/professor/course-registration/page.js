@@ -6,6 +6,7 @@ import { professorCourseRegistrationAPI } from "../../../lib/professorApi";
 import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch, FiUpload, FiFile } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
+import { BASE_PATH } from "../../../lib/basePath";
 
 export default function CourseRegistrationPage() {
   const { user } = useAuth();
@@ -141,10 +142,27 @@ export default function CourseRegistrationPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation: ต้องใส่ชื่อและรหัสวิชาภาษาไทย
+    if (!formData.name_th?.trim()) {
+      toast.error("กรุณาระบุชื่อวิชา (ภาษาไทย)");
+      return;
+    }
+    if (!formData.code_th?.trim()) {
+      toast.error("กรุณาระบุรหัสวิชา (ภาษาไทย)");
+      return;
+    }
+
+    // Validation: ต้องมีอาจารย์ผู้สอนอย่างน้อย 1 คน
+    const validInstructors = formData.instructors.filter(i => i.trim() !== "");
+    if (validInstructors.length === 0) {
+      toast.error("กรุณาระบุอาจารย์ผู้สอนอย่างน้อย 1 คน");
+      return;
+    }
+
     try {
       const submitData = {
         ...formData,
-        instructors: formData.instructors.filter(i => i.trim() !== ""),
+        instructors: validInstructors,
         keywords: formData.keywords.filter(k => k.trim() !== "")
       };
 
@@ -362,7 +380,13 @@ export default function CourseRegistrationPage() {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-800 mb-0.5">
-                        {course.code_en || course.code_th} - {course.name_th}
+                        <a 
+                          href={`${BASE_PATH}/professor/course-books?courseId=${course.id}`}
+                          className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                        >
+                          {course.code_en || course.code_th}
+                        </a>
+                        {' - '}{course.name_th}
                       </h3>
                       <p className="text-gray-500 text-xs">
                         {course.code_th && course.code_en ? course.code_th : ''} {course.name_en ? `- ${course.name_en}` : ''}
@@ -392,7 +416,7 @@ export default function CourseRegistrationPage() {
                     )}
                     {course.curriculum_name && (
                       <span className="inline-block px-2 py-0.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-full text-xs font-medium">
-                        {course.curriculum_name} {course.curriculum_level && `(${course.curriculum_level})`}
+                        {course.curriculum_name}{course.curriculum_level && !course.curriculum_name?.includes('ศึกษาทั่วไป') ? ` (${course.curriculum_level})` : ''}
                       </span>
                     )}
                   </div>
@@ -466,7 +490,7 @@ export default function CourseRegistrationPage() {
                       className="input-field w-full"
                     >
                       <option value="">เลือกคณะ</option>
-                      {faculties.map((faculty) => (
+                      {faculties.filter(f => !f.name?.includes('กองบริการศึกษา')).map((faculty) => (
                         <option key={faculty.id} value={faculty.id}>
                           {faculty.name}
                         </option>
@@ -490,7 +514,7 @@ export default function CourseRegistrationPage() {
                       <option value="">เลือกหลักสูตร</option>
                       {curriculums.map((curriculum) => (
                         <option key={curriculum.id} value={curriculum.id}>
-                          {curriculum.name} ({curriculum.level})
+                          {curriculum.name}{curriculum.level && !curriculum.name?.includes('ศึกษาทั่วไป') ? ` (${curriculum.level})` : ''}
                         </option>
                       ))}
                     </select>
@@ -515,11 +539,12 @@ export default function CourseRegistrationPage() {
                   {/* Thai Code */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      รหัสวิชา (ไทย)
+                      รหัสวิชา (ไทย) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="code_th"
+                      required
                       value={formData.code_th}
                       onChange={handleInputChange}
                       className="input-field w-full"
@@ -570,10 +595,12 @@ export default function CourseRegistrationPage() {
                             type="text"
                             value={instructor}
                             onChange={(e) => handleInstructorChange(index, e.target.value)}
-                            className="input-field flex-1"
+                            className={`input-field flex-1 ${index === 0 ? 'bg-gray-100' : ''}`}
                             placeholder="ตัวอย่าง ผศ.ดร.สมชาย ใจดี"
+                            required={index === 0}
+                            disabled={index === 0}
                           />
-                          {formData.instructors.length > 1 && (
+                          {formData.instructors.length > 1 && index !== 0 && (
                             <button
                               type="button"
                               onClick={() => removeInstructor(index)}

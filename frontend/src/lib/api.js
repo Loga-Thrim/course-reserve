@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { redirectTo } from './basePath';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -28,7 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      redirectTo('/login');
     }
     return Promise.reject(error);
   }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { redirectTo } from './basePath';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -35,7 +36,7 @@ professorApi.interceptors.response.use(
         // Token exists but got 401 - token is invalid, clear and redirect
         localStorage.removeItem('professorToken');
         localStorage.removeItem('professorUser');
-        window.location.href = '/professor/login';
+        redirectTo('/professor/login');
       }
     }
     return Promise.reject(error);
