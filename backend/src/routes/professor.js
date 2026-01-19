@@ -3,6 +3,7 @@ const router = express.Router();
 const professorAuth = require('../middleware/professorAuth');
 const professorCourseRegistrationController = require('../controllers/professor/courseRegistrationController');
 const courseBooksController = require('../controllers/professor/courseBooksController');
+const lineBorrowController = require('../controllers/lineBorrowController');
 const upload = require('../middleware/fileUpload');
 
 router.use(professorAuth);
@@ -27,5 +28,8 @@ router.post('/course-books/:courseId/refresh', courseBooksController.refreshBook
 router.get('/course-books/:courseId', courseBooksController.getCourseBooks);
 router.post('/course-books/:courseId', courseBooksController.addBookToCourse);
 router.delete('/course-books/:courseId/:bookId', courseBooksController.removeBookFromCourse);
+
+router.post('/line-borrow', lineBorrowController.lineBorrow);
+router.get('/line-borrow/:studentId', lineBorrowController.getLineBorrowStatus);
 
 module.exports = router;

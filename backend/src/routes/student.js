@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const studentCoursesController = require('../controllers/studentCoursesController');
+const lineBorrowController = require('../controllers/lineBorrowController');
 const authMiddleware = require('../middleware/auth');
 
 // All routes require authentication
@@ -26,5 +27,9 @@ router.delete('/my-courses/:courseId', studentCoursesController.removeCourse);
 
 // Get course detail with books
 router.get('/courses/:courseId', studentCoursesController.getCourseDetail);
+
+// Line Borrow
+router.post('/line-borrow', lineBorrowController.lineBorrow);
+router.get('/line-borrow/:studentId', lineBorrowController.getLineBorrowStatus);
 
 module.exports = router;

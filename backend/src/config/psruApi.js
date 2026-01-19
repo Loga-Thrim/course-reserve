@@ -6,7 +6,9 @@ const PSRU_API_TOKEN = process.env.PSRU_API_TOKEN;
 
 const PSRU_ENDPOINTS = {
   AUTH: `${PSRU_API_BASE_URL}/authen`,
-  BOOK_KEYWORD: `${PSRU_API_BASE_URL}/bookKeyword`
+  BOOK_KEYWORD: `${PSRU_API_BASE_URL}/bookKeyword`,
+  LINE_BORROW: `${PSRU_API_BASE_URL}/lineBorrow`,
+  GET_LINE_BORROW: `${PSRU_API_BASE_URL}/getlineBorrow`
 };
 
 const psruAxios = axios.create({

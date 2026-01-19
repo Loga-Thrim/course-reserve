@@ -68,6 +68,9 @@ export const studentAPI = {
   removeCourse: (courseId) => api.delete(`/api/student/my-courses/${courseId}`),
   // Get course detail with books
   getCourseDetail: (courseId) => api.get(`/api/student/courses/${courseId}`),
+  // Line Borrow
+  lineBorrow: (data) => api.post('/api/student/line-borrow', data),
+  getLineBorrowStatus: (studentId) => api.get(`/api/student/line-borrow/${studentId}`),
 };
 
 export default api;

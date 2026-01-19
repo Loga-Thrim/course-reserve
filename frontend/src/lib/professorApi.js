@@ -78,6 +78,8 @@ export const professorCourseBooksAPI = {
   getCourseBooks: (courseId) => professorApi.get(`/api/professor/course-books/${courseId}`),
   addBookToCourse: (courseId, bookData) => professorApi.post(`/api/professor/course-books/${courseId}`, bookData),
   removeBookFromCourse: (courseId, bookId) => professorApi.delete(`/api/professor/course-books/${courseId}/${bookId}`),
+  lineBorrow: (data) => professorApi.post('/api/professor/line-borrow', data),
+  getLineBorrowStatus: (studentId) => professorApi.get(`/api/professor/line-borrow/${studentId}`),
 };
 
 export default professorApi;
