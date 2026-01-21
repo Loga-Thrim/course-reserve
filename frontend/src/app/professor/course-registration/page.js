@@ -142,13 +142,9 @@ export default function CourseRegistrationPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation: ต้องใส่ชื่อและรหัสวิชาภาษาไทย
+    // Validation: ต้องใส่ชื่อวิชาภาษาไทย
     if (!formData.name_th?.trim()) {
       toast.error("กรุณาระบุชื่อวิชา (ภาษาไทย)");
-      return;
-    }
-    if (!formData.code_th?.trim()) {
-      toast.error("กรุณาระบุรหัสวิชา (ภาษาไทย)");
       return;
     }
 
@@ -457,7 +453,6 @@ export default function CourseRegistrationPage() {
         {showModal && (
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => setShowModal(false)}
           >
             <div
               className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
@@ -539,12 +534,11 @@ export default function CourseRegistrationPage() {
                   {/* Thai Code */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      รหัสวิชา (ไทย) <span className="text-red-500">*</span>
+                      รหัสวิชา (ไทย)
                     </label>
                     <input
                       type="text"
                       name="code_th"
-                      required
                       value={formData.code_th}
                       onChange={handleInputChange}
                       className="input-field w-full"

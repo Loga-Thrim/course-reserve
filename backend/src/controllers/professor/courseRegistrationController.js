@@ -129,7 +129,7 @@ const courseRegistrationController = {
         keywords
       } = req.body;
 
-      if (!name_th || !code_th || !faculty_id || !curriculum_id || !description_th) {
+      if (!name_th || !faculty_id || !curriculum_id || !description_th) {
         return res.status(400).json({ 
           error: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' 
         });
@@ -148,7 +148,7 @@ const courseRegistrationController = {
           description_th, description_en, website, keywords) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
          RETURNING *`,
-        [professorId, name_th, name_en || null, code_th, code_en || null, faculty_id, curriculum_id, 
+        [professorId, name_th, name_en || null, code_th || null, code_en || null, faculty_id, curriculum_id, 
          description_th, description_en || null, website || null, keywords || []]
       );
 
@@ -244,7 +244,7 @@ const courseRegistrationController = {
              description_th = $7, description_en = $8, website = $9, keywords = $10, updated_at = NOW()
          WHERE id = $11
          RETURNING *`,
-        [name_th, name_en || null, code_th, code_en || null, faculty_id, curriculum_id,
+        [name_th, name_en || null, code_th || null, code_en || null, faculty_id, curriculum_id,
          description_th, description_en || null, website || null, keywords || [], id]
       );
 
@@ -474,7 +474,7 @@ const courseRegistrationController = {
       `, params);
 
       const recentCoursesResult = await pool.query(`
-        SELECT pc.id, pc.code_th, pc.name_th, pc.created_at,
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th, pc.created_at,
                (SELECT COUNT(*) FROM course_books cb WHERE cb.course_id = pc.id) as book_count,
                (SELECT COUNT(*) FROM course_files cf WHERE cf.course_id = pc.id) as file_count
         FROM professor_courses pc
@@ -483,8 +483,26 @@ const courseRegistrationController = {
         LIMIT 5
       `, params);
 
+      const allCoursesResult = await pool.query(`
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th,
+               (SELECT COUNT(*) FROM course_books cb WHERE cb.course_id = pc.id) as book_count
+        FROM professor_courses pc
+        ${courseFilter}
+        ORDER BY pc.name_th
+      `, params);
+
+      const coursesWithBooksListResult = await pool.query(`
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th,
+               COUNT(cb.id) as book_count
+        FROM professor_courses pc
+        INNER JOIN course_books cb ON cb.course_id = pc.id
+        ${courseFilter ? courseFilter.replace('WHERE', isAdmin ? 'WHERE 1=1 AND' : 'WHERE') : ''}
+        GROUP BY pc.id
+        ORDER BY pc.name_th
+      `, params);
+
       const coursesNeedingBooksResult = await pool.query(`
-        SELECT pc.id, pc.code_th, pc.name_th
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th
         FROM professor_courses pc
         LEFT JOIN course_books cb ON cb.course_id = pc.id
         ${courseFilter}
@@ -494,13 +512,35 @@ const courseRegistrationController = {
         LIMIT 5
       `, params);
 
+      const bookCountByCoursesResult = await pool.query(`
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th, COUNT(cb.id) as book_count
+        FROM professor_courses pc
+        LEFT JOIN course_books cb ON cb.course_id = pc.id
+        ${courseFilter}
+        GROUP BY pc.id
+        ORDER BY book_count DESC, pc.name_th
+      `, params);
+
+      const fileCountByCoursesResult = await pool.query(`
+        SELECT pc.id, pc.code_th, pc.code_en, pc.name_th, COUNT(cf.id) as file_count
+        FROM professor_courses pc
+        LEFT JOIN course_files cf ON cf.course_id = pc.id
+        ${courseFilter}
+        GROUP BY pc.id
+        ORDER BY file_count DESC, pc.name_th
+      `, params);
+
       res.json({
         totalCourses: parseInt(coursesResult.rows[0].total),
         coursesWithBooks: parseInt(coursesWithBooksResult.rows[0].total),
         totalBooks: parseInt(booksResult.rows[0].total),
         totalFiles: parseInt(filesResult.rows[0].total),
         recentCourses: recentCoursesResult.rows,
-        coursesNeedingBooks: coursesNeedingBooksResult.rows
+        coursesNeedingBooks: coursesNeedingBooksResult.rows,
+        allCourses: allCoursesResult.rows,
+        coursesWithBooksList: coursesWithBooksListResult.rows,
+        bookCountByCourses: bookCountByCoursesResult.rows,
+        fileCountByCourses: fileCountByCoursesResult.rows
       });
     } catch (error) {
       console.error('Get dashboard stats error:', error);

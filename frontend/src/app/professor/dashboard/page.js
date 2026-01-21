@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { FiGrid, FiBook, FiFile, FiCheckCircle, FiAlertCircle, FiClock, FiArrowRight, FiPlus } from "react-icons/fi";
+import { useEffect, useState, useCallback } from "react";
+import { FiGrid, FiBook, FiFile, FiCheckCircle, FiAlertCircle, FiClock, FiArrowRight, FiPlus, FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorDashboardAPI } from "../../../lib/professorApi";
@@ -10,6 +10,7 @@ export default function ProfessorDashboardPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [expandedCard, setExpandedCard] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,34 +44,206 @@ export default function ProfessorDashboardPage() {
 
   const statCards = [
     {
+      id: "courses",
       title: "รายวิชาทั้งหมด",
       value: stats?.totalCourses || 0,
       icon: FiGrid,
       gradient: "from-emerald-500 to-teal-600",
       bgGradient: "from-emerald-50 to-teal-50",
+      href: "/professor/course-registration",
+      data: stats?.allCourses || [],
     },
     {
+      id: "coursesWithBooks",
       title: "รายวิชาที่มีหนังสือแล้ว",
       value: stats?.coursesWithBooks || 0,
       icon: FiCheckCircle,
       gradient: "from-blue-500 to-indigo-600",
       bgGradient: "from-blue-50 to-indigo-50",
+      href: "/professor/course-books",
+      data: stats?.coursesWithBooksList || [],
     },
     {
+      id: "books",
       title: "จำนวนหนังสือทั้งหมด",
       value: stats?.totalBooks || 0,
       icon: FiBook,
       gradient: "from-purple-500 to-pink-600",
       bgGradient: "from-purple-50 to-pink-50",
+      href: "/professor/course-books",
+      data: stats?.bookCountByCourses || [],
     },
     {
+      id: "files",
       title: "จำนวนไฟล์ Upload",
       value: stats?.totalFiles || 0,
       icon: FiFile,
       gradient: "from-orange-500 to-red-600",
       bgGradient: "from-orange-50 to-red-50",
+      href: "/professor/course-books",
+      data: stats?.fileCountByCourses || [],
     },
   ];
+
+  const toggleCard = useCallback((cardId) => {
+    setExpandedCard((prev) => prev === cardId ? null : cardId);
+  }, []);
+
+  const renderCardContent = (card) => {
+    switch (card.id) {
+      case "courses":
+        return card.data.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {card.data.slice(0, 5).map((course) => (
+              <div
+                key={course.id}
+                className="p-3 hover:bg-white/50 cursor-pointer transition-colors"
+                onClick={() => router.push("/professor/course-registration")}
+              >
+                <p className="font-medium text-gray-800 text-sm truncate">
+                  {course.code_en || course.code_th || "-"}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="p-4 text-center text-gray-500 text-sm">ยังไม่มีรายวิชา</p>
+        );
+
+      case "coursesWithBooks":
+        return card.data.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {card.data.slice(0, 5).map((course) => (
+              <div
+                key={course.id}
+                className="p-3 hover:bg-white/50 cursor-pointer transition-colors"
+                onClick={() => router.push(`/professor/course-books?courseId=${course.id}`)}
+              >
+                <p className="font-medium text-gray-800 text-sm truncate">
+                  {course.code_en || course.code_th || "-"}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+                <span className="text-xs text-blue-600">{course.book_count} หนังสือ</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="p-4 text-center text-gray-500 text-sm">ยังไม่มีรายวิชาที่มีหนังสือ</p>
+        );
+
+      case "books":
+        const coursesWithBooks = card.data.filter(c => parseInt(c.book_count) > 0);
+        const coursesWithoutBooks = card.data.filter(c => parseInt(c.book_count) === 0);
+        return (
+          <div>
+            {coursesWithBooks.length > 0 && (
+              <div className="divide-y divide-gray-100">
+                {coursesWithBooks.slice(0, 5).map((course) => (
+                  <div
+                    key={course.id}
+                    className="p-3 hover:bg-white/50 cursor-pointer transition-colors flex items-center justify-between"
+                    onClick={() => router.push(`/professor/course-books?courseId=${course.id}`)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 text-sm truncate">
+                        {course.code_en || course.code_th || course.name_th}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+                    </div>
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium ml-2">
+                      {course.book_count} เล่ม
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {coursesWithoutBooks.length > 0 && (
+              <div className="border-t border-gray-200 mt-2 pt-2">
+                <p className="px-3 py-1 text-xs font-medium text-amber-600 flex items-center gap-1">
+                  <FiAlertCircle className="text-xs" />
+                  รายวิชาที่ยังไม่มีหนังสือ ({coursesWithoutBooks.length})
+                </p>
+                <div className="divide-y divide-gray-100">
+                  {coursesWithoutBooks.slice(0, 3).map((course) => (
+                    <div
+                      key={course.id}
+                      className="p-3 hover:bg-amber-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/professor/course-books?courseId=${course.id}`)}
+                    >
+                      <p className="font-medium text-gray-700 text-sm truncate">
+                        {course.code_en || course.code_th || course.name_th}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {card.data.length === 0 && (
+              <p className="p-4 text-center text-gray-500 text-sm">ยังไม่มีรายวิชา</p>
+            )}
+          </div>
+        );
+
+      case "files":
+        const coursesWithFiles = card.data.filter(c => parseInt(c.file_count) > 0);
+        const coursesWithoutFiles = card.data.filter(c => parseInt(c.file_count) === 0);
+        return (
+          <div>
+            {coursesWithFiles.length > 0 && (
+              <div className="divide-y divide-gray-100">
+                {coursesWithFiles.slice(0, 5).map((course) => (
+                  <div
+                    key={course.id}
+                    className="p-3 hover:bg-white/50 cursor-pointer transition-colors flex items-center justify-between"
+                    onClick={() => router.push(`/professor/course-books?courseId=${course.id}`)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 text-sm truncate">
+                        {course.code_en || course.code_th || course.name_th}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+                    </div>
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium ml-2">
+                      {course.file_count} ไฟล์
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {coursesWithoutFiles.length > 0 && (
+              <div className="border-t border-gray-200 mt-2 pt-2">
+                <p className="px-3 py-1 text-xs font-medium text-amber-600 flex items-center gap-1">
+                  <FiAlertCircle className="text-xs" />
+                  รายวิชาที่ยังไม่มีไฟล์ ({coursesWithoutFiles.length})
+                </p>
+                <div className="divide-y divide-gray-100">
+                  {coursesWithoutFiles.slice(0, 3).map((course) => (
+                    <div
+                      key={course.id}
+                      className="p-3 hover:bg-amber-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/professor/course-books?courseId=${course.id}`)}
+                    >
+                      <p className="font-medium text-gray-700 text-sm truncate">
+                        {course.code_en || course.code_th || course.name_th}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{course.name_th}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {card.data.length === 0 && (
+              <p className="p-4 text-center text-gray-500 text-sm">ยังไม่มีรายวิชา</p>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   const quickActions = [
     {
@@ -118,29 +291,66 @@ export default function ProfessorDashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((card, index) => {
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          {statCards.map((card) => {
             const Icon = card.icon;
+            const isExpanded = expandedCard === card.id;
             return (
               <div
-                key={index}
-                className={`bg-gradient-to-br ${card.bgGradient} rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-4 sm:p-6`}
+                key={card.id}
+                className={`bg-gradient-to-br ${card.bgGradient} rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 overflow-hidden`}
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1">
-                      {card.title}
-                    </p>
-                    <p className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
-                      {card.value}
-                    </p>
+                <div
+                  onClick={() => toggleCard(card.id)}
+                  className="p-4 sm:p-6 cursor-pointer"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1">
+                        {card.title}
+                      </p>
+                      <p className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                        {card.value}
+                      </p>
+                    </div>
+                    <div
+                      className={`bg-gradient-to-r ${card.gradient} w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-md`}
+                    >
+                      <Icon className="text-white text-lg sm:text-xl" />
+                    </div>
                   </div>
-                  <div
-                    className={`bg-gradient-to-r ${card.gradient} w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-md`}
-                  >
-                    <Icon className="text-white text-lg sm:text-xl" />
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200/50">
+                    <span className="text-xs text-gray-500">คลิกเพื่อดูรายละเอียด</span>
+                    {isExpanded ? (
+                      <FiChevronUp className="text-gray-500" />
+                    ) : (
+                      <FiChevronDown className="text-gray-500" />
+                    )}
                   </div>
                 </div>
+                
+                {/* Collapsible Content */}
+                {isExpanded && (
+                  <div className="bg-white/80 border-t border-gray-200/50 max-h-64 overflow-y-auto">
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+                      <span className="text-xs font-medium text-gray-600">
+                        แสดง {Math.min(card.data.length, 5)} จาก {card.data.length} รายการ
+                      </span>
+                      {card.data.length > 5 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(card.href);
+                          }}
+                          className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+                        >
+                          ดูทั้งหมด <FiArrowRight className="text-xs" />
+                        </button>
+                      )}
+                    </div>
+                    {renderCardContent(card)}
+                  </div>
+                )}
               </div>
             );
           })}

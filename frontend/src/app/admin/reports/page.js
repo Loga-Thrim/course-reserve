@@ -319,12 +319,12 @@ export default function AdminReportsPage() {
   ];
 
   const statCards = [
-    { title: "รายวิชาทั้งหมด", value: overview?.totalCourses || 0, icon: FiGrid, color: "emerald" },
-    { title: "รายวิชาที่มีหนังสือ", value: overview?.coursesWithBooks || 0, icon: FiBook, color: "blue" },
-    { title: "หนังสือทั้งหมด", value: overview?.totalBooks || 0, icon: FiBook, color: "purple" },
-    { title: "ไฟล์ทั้งหมด", value: overview?.totalFiles || 0, icon: FiFile, color: "orange" },
-    { title: "คณะที่มีรายวิชา", value: overview?.totalFaculties || 0, icon: FiUsers, color: "pink" },
-    { title: "หลักสูตรที่มีรายวิชา", value: overview?.totalCurriculums || 0, icon: FiList, color: "cyan" },
+    { title: "รายวิชาทั้งหมด", value: overview?.totalCourses || 0, icon: FiGrid, color: "emerald", tab: "courses" },
+    { title: "รายวิชาที่มีหนังสือ", value: overview?.coursesWithBooks || 0, icon: FiBook, color: "blue", tab: "courses" },
+    { title: "หนังสือทั้งหมด", value: overview?.totalBooks || 0, icon: FiBook, color: "purple", tab: "books" },
+    { title: "ไฟล์ทั้งหมด", value: overview?.totalFiles || 0, icon: FiFile, color: "orange", tab: "courses" },
+    { title: "คณะที่มีรายวิชา", value: overview?.totalFaculties || 0, icon: FiUsers, color: "pink", tab: "faculty" },
+    { title: "หลักสูตรที่มีรายวิชา", value: overview?.totalCurriculums || 0, icon: FiList, color: "cyan", tab: "curriculum" },
   ];
 
   return (
@@ -411,7 +411,8 @@ export default function AdminReportsPage() {
                     return (
                       <div
                         key={index}
-                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-4"
+                        onClick={() => setActiveTab(card.tab)}
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md hover:border-gray-200 transition-all"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <Icon className={`text-${card.color}-500 text-xl`} />
