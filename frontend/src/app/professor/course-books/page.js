@@ -194,6 +194,9 @@ export default function CourseBooksPage() {
   const [addingMultiple, setAddingMultiple] = useState(false);
   const [removingMultiple, setRemovingMultiple] = useState(false);
 
+  // Expanded copies state
+  const [expandedBookId, setExpandedBookId] = useState(null);
+
   // Check auth before fetching data
   useEffect(() => {
     const token = localStorage.getItem("professorToken");
@@ -325,6 +328,31 @@ export default function CourseBooksPage() {
     () => new Set(courseBooks.map((cb) => cb.book_id)),
     [courseBooks]
   );
+
+  // Group books by book_id to show copies count
+  const groupedCourseBooks = useMemo(() => {
+    const grouped = {};
+    courseBooks.forEach((book) => {
+      const bookId = book.book_id;
+      if (!grouped[bookId]) {
+        grouped[bookId] = {
+          ...book,
+          copies: [],
+          copyCount: 0,
+        };
+      }
+      grouped[bookId].copies.push({
+        id: book.id,
+        barcode: book.barcode,
+        callnumber: book.callnumber,
+        collection_name: book.collection_name,
+        item_status: book.item_status,
+        location: book.location,
+      });
+      grouped[bookId].copyCount++;
+    });
+    return Object.values(grouped);
+  }, [courseBooks]);
 
   const isBookAdded = useCallback(
     (bookId) => addedBookIds.has(bookId),
@@ -611,14 +639,16 @@ export default function CourseBooksPage() {
       "สำนักพิมพ์",
       "เลขเรียกหนังสือ",
       "ISBN",
+      "จำนวน (เล่ม)",
     ];
-    const rows = courseBooks.map((book, index) => [
+    const rows = groupedCourseBooks.map((book, index) => [
       index + 1,
       `"${(book.title || "").replace(/"/g, '""')}"`,
       `"${(book.author || "").replace(/"/g, '""')}"`,
       `"${(book.publisher || "").replace(/"/g, '""')}"`,
       `"${(book.callnumber || "").replace(/"/g, '""')}"`,
       `"${(book.isbn || "").replace(/"/g, '""')}"`,
+      book.copyCount,
     ]);
 
     const BOM = "\uFEFF";
@@ -641,7 +671,7 @@ export default function CourseBooksPage() {
     document.body.removeChild(link);
 
     toast.success("ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว");
-  }, [selectedCourse, courseBooks]);
+  }, [selectedCourse, courseBooks, groupedCourseBooks]);
 
   const exportToExcel = useCallback(() => {
     if (!selectedCourse || courseBooks.length === 0) return;
@@ -654,7 +684,7 @@ export default function CourseBooksPage() {
       month: "long",
       day: "numeric",
     })}`;
-    const totalBooks = `จำนวนหนังสือทั้งหมด: ${courseBooks.length} เล่ม`;
+    const totalBooks = `จำนวนหนังสือทั้งหมด: ${groupedCourseBooks.length} รายการ (${courseBooks.length} เล่ม)`;
 
     const headers = [
       "ลำดับ",
@@ -663,14 +693,16 @@ export default function CourseBooksPage() {
       "สำนักพิมพ์",
       "เลขเรียกหนังสือ",
       "ISBN",
+      "จำนวน (เล่ม)",
     ];
-    const rows = courseBooks.map((book, index) => [
+    const rows = groupedCourseBooks.map((book, index) => [
       index + 1,
       book.title || "",
       book.author || "",
       book.publisher || "",
       book.callnumber || "",
       book.isbn || "",
+      book.copyCount,
     ]);
 
     // Create HTML table for Excel
@@ -679,10 +711,10 @@ export default function CourseBooksPage() {
       <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>หนังสือรายวิชา</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
       <body>
         <table>
-          <tr><td colspan="6" style="font-size:16px;font-weight:bold;">${courseInfo}</td></tr>
-          <tr><td colspan="6">${exportDate}</td></tr>
-          <tr><td colspan="6">${totalBooks}</td></tr>
-          <tr><td colspan="6"></td></tr>
+          <tr><td colspan="7" style="font-size:16px;font-weight:bold;">${courseInfo}</td></tr>
+          <tr><td colspan="7">${exportDate}</td></tr>
+          <tr><td colspan="7">${totalBooks}</td></tr>
+          <tr><td colspan="7"></td></tr>
           <tr style="background-color:#10b981;color:white;font-weight:bold;">
             ${headers
               .map(
@@ -699,7 +731,7 @@ export default function CourseBooksPage() {
                 .map(
                   (cell, cellIdx) =>
                     `<td style="padding:6px;border:1px solid #e5e7eb;${
-                      cellIdx === 0 ? "text-align:center;" : ""
+                      cellIdx === 0 || cellIdx === 6 ? "text-align:center;" : ""
                     }">${cell}</td>`
                 )
                 .join("")}
@@ -730,7 +762,7 @@ export default function CourseBooksPage() {
     document.body.removeChild(link);
 
     toast.success("ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว");
-  }, [selectedCourse, courseBooks]);
+  }, [selectedCourse, courseBooks, groupedCourseBooks]);
 
   if (loading) {
     return (
@@ -1050,7 +1082,7 @@ export default function CourseBooksPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <FiBook className="text-emerald-600" />
-                    หนังสือในรายวิชา ({courseBooks.length})
+                    หนังสือในรายวิชา ({groupedCourseBooks.length} รายการ, {courseBooks.length} เล่ม)
                   </h2>
 
                   {/* Export Buttons */}
@@ -1127,30 +1159,153 @@ export default function CourseBooksPage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {courseBooks.map((book) => (
-                        <BookCard
-                          key={book.id}
-                          book={{
-                            id: book.book_id,
-                            title: book.title,
-                            author: book.author,
-                            publisher: book.publisher,
-                            callnumber: book.callnumber,
-                            bookcover: book.bookcover,
-                            isbn: book.isbn,
-                            pubyear: book.pubyear,
-                            mattypeName: book.mattypeName,
-                            lang: book.lang,
-                            cat_date: book.cat_date,
-                          }}
-                          showAddButton={false}
-                          showRemoveButton={true}
-                          onRemove={() => handleRemoveBook(book.id)}
-                          onShowDetail={setSelectedBook}
-                          showCheckbox={true}
-                          isSelected={selectedCourseBooks.has(book.id)}
-                          onToggleSelect={() => toggleCourseBookSelect(book)}
-                        />
+                      {groupedCourseBooks.map((book) => (
+                        <div key={book.book_id} className="rounded-xl border shadow-sm bg-white border-gray-100">
+                          {/* Main Book Card */}
+                          <div className="p-4">
+                            <div className="flex gap-3">
+                              {/* Book Cover */}
+                              <div 
+                                className="w-16 h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
+                                onClick={() => setSelectedBook({
+                                  id: book.book_id,
+                                  title: book.title,
+                                  author: book.author,
+                                  publisher: book.publisher,
+                                  callnumber: book.callnumber,
+                                  bookcover: book.bookcover,
+                                  isbn: book.isbn,
+                                })}
+                              >
+                                {book.bookcover ? (
+                                  <img
+                                    src={book.bookcover}
+                                    alt={book.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.style.display = "none";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <FiBook className="text-gray-300 text-xl" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Book Info */}
+                              <div className="flex-1 min-w-0">
+                                <h3 
+                                  className="font-medium text-gray-800 text-sm line-clamp-2 cursor-pointer hover:text-emerald-600"
+                                  onClick={() => setSelectedBook({
+                                    id: book.book_id,
+                                    title: book.title,
+                                    author: book.author,
+                                    publisher: book.publisher,
+                                    callnumber: book.callnumber,
+                                    bookcover: book.bookcover,
+                                    isbn: book.isbn,
+                                  })}
+                                >
+                                  {book.title}
+                                </h3>
+                                {book.author && (
+                                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                                    {book.author}
+                                  </p>
+                                )}
+                                
+                                {/* Copy Count Badge */}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                                    <FiBook className="text-xs" />
+                                    {book.copyCount} เล่ม
+                                  </span>
+                                  {book.copyCount > 1 && (
+                                    <button
+                                      onClick={() => setExpandedBookId(expandedBookId === book.book_id ? null : book.book_id)}
+                                      className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                                    >
+                                      {expandedBookId === book.book_id ? "ซ่อนรายละเอียด" : "ดูรายละเอียด"}
+                                      <FiChevronDown className={`transition-transform ${expandedBookId === book.book_id ? "rotate-180" : ""}`} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`ต้องการลบหนังสือ "${book.title}" ทั้งหมด ${book.copyCount} เล่มออกจากรายวิชานี้หรือไม่?`)) {
+                                      // Remove all copies
+                                      book.copies.forEach(copy => handleRemoveBook(copy.id));
+                                    }
+                                  }}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="ลบหนังสือทั้งหมด"
+                                >
+                                  <FiTrash2 className="text-sm" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Expanded Copies List */}
+                          {expandedBookId === book.book_id && book.copyCount > 1 && (
+                            <div className="border-t border-gray-100 bg-gray-50/50 p-3">
+                              <p className="text-xs font-medium text-gray-500 mb-2">รายละเอียดแต่ละเล่ม:</p>
+                              <div className="space-y-2">
+                                {book.copies.map((copy, idx) => (
+                                  <div 
+                                    key={copy.id} 
+                                    className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 text-xs"
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-700">เล่มที่ {idx + 1}</span>
+                                        {copy.barcode && (
+                                          <span className="text-gray-400">({copy.barcode})</span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-gray-500">
+                                        {copy.callnumber && (
+                                          <span className="flex items-center gap-1">
+                                            <FiHash className="text-xs" /> {copy.callnumber}
+                                          </span>
+                                        )}
+                                        {copy.location && (
+                                          <span className="flex items-center gap-1">
+                                            <FiMapPin className="text-xs" /> {copy.location}
+                                          </span>
+                                        )}
+                                        {copy.item_status && (
+                                          <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                            copy.item_status === "Available" 
+                                              ? "bg-green-100 text-green-700" 
+                                              : "bg-amber-100 text-amber-700"
+                                          }`}>
+                                            {copy.item_status}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {copy.collection_name && (
+                                        <p className="text-gray-400 mt-1 truncate">{copy.collection_name}</p>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => handleRemoveBook(copy.id)}
+                                      className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
+                                      title="ลบเล่มนี้"
+                                    >
+                                      <FiTrash2 className="text-xs" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1371,7 +1526,7 @@ export default function CourseBooksPage() {
                         className="inline-flex items-center gap-2 px-4 py-2 text-white text-sm rounded-lg transition-colors cursor-not-allowed bg-gray-500"
                       >
                         <FiBook className="w-4 h-4" />
-                        บริการ RDC
+                        บริการ RDS
                       </button>
                     </div>
                   </div>

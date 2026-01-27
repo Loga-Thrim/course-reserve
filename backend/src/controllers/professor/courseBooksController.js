@@ -229,33 +229,118 @@ const courseBooksController = {
         return res.status(403).json({ error: 'ไม่มีสิทธิ์เพิ่มหนังสือในรายวิชานี้' });
       }
 
-      const existingBook = await pool.query(
-        'SELECT id FROM course_books WHERE course_id = $1 AND book_id = $2',
-        [courseId, book_id]
-      );
-
-      if (existingBook.rows.length > 0) {
-        return res.status(400).json({ error: 'หนังสือนี้ถูกเพิ่มในรายวิชาแล้ว' });
+      // Fetch all items (copies) from library API
+      let itemsToAdd = [];
+      try {
+        const itemResponse = await psruAxios.get(`${PSRU_ENDPOINTS.GET_ITEM}/${book_id}`);
+        if (itemResponse.data?.status === '200' && itemResponse.data?.message?.ItemInfo) {
+          itemsToAdd = itemResponse.data.message.ItemInfo;
+        }
+      } catch (apiError) {
+        console.error('Error fetching items from library API:', apiError.message);
+        // Continue with single book if API fails
       }
 
-      const result = await pool.query(
-        `INSERT INTO course_books (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, added_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING *`,
-        [courseId, book_id, title, author, publisher, callnumber, isbn, bookcover, req.user.barcode]
-      );
+      // If no items from API, add the single book from request
+      if (itemsToAdd.length === 0) {
+        const existingBook = await pool.query(
+          'SELECT id FROM course_books WHERE course_id = $1 AND book_id = $2',
+          [courseId, book_id]
+        );
 
-      await activityLogger.logCreate(
-        { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
-        'professor',
-        'book',
-        result.rows[0].id,
-        title,
-        { courseId, courseName: course.name_th, bookId: book_id },
-        req
-      );
+        if (existingBook.rows.length > 0) {
+          return res.status(400).json({ error: 'หนังสือนี้ถูกเพิ่มในรายวิชาแล้ว' });
+        }
 
-      res.status(201).json(result.rows[0]);
+        const result = await pool.query(
+          `INSERT INTO course_books (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, added_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING *`,
+          [courseId, book_id, title, author, publisher, callnumber, isbn, bookcover, req.user.barcode]
+        );
+
+        await activityLogger.logCreate(
+          { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
+          'professor',
+          'book',
+          result.rows[0].id,
+          title,
+          { courseId, courseName: course.name_th, bookId: book_id },
+          req
+        );
+
+        return res.status(201).json(result.rows[0]);
+      }
+
+      // Add all items from library API
+      const addedBooks = [];
+      const skippedBooks = [];
+
+      for (const item of itemsToAdd) {
+        const barcode = item.BARCODE;
+        
+        // Check if this barcode already exists in the course
+        const existingBook = await pool.query(
+          'SELECT id FROM course_books WHERE course_id = $1 AND barcode = $2',
+          [courseId, barcode]
+        );
+
+        if (existingBook.rows.length > 0) {
+          skippedBooks.push(barcode);
+          continue;
+        }
+
+        // Use callnumber from item if available, otherwise use from request
+        const itemCallnumber = item.CALLNO || callnumber;
+
+        const result = await pool.query(
+          `INSERT INTO course_books (course_id, book_id, barcode, title, author, publisher, callnumber, isbn, bookcover, collection_name, item_status, location, added_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           RETURNING *`,
+          [
+            courseId, 
+            book_id, 
+            barcode,
+            title, 
+            author, 
+            publisher, 
+            itemCallnumber, 
+            isbn, 
+            bookcover, 
+            item.COLLECTIONNAME || null,
+            item.ITEMSTATUSNAME || null,
+            item.LOCATIONINITIAL || null,
+            req.user.barcode
+          ]
+        );
+
+        addedBooks.push(result.rows[0]);
+      }
+
+      // Log activity for all added books
+      if (addedBooks.length > 0) {
+        await activityLogger.logCreate(
+          { id: req.user.userId || req.user.id, name: req.user.name, email: req.user.barcode },
+          'professor',
+          'book',
+          addedBooks[0].id,
+          title,
+          { 
+            courseId, 
+            courseName: course.name_th, 
+            bookId: book_id,
+            totalCopies: addedBooks.length,
+            skippedCopies: skippedBooks.length
+          },
+          req
+        );
+      }
+
+      res.status(201).json({
+        message: `เพิ่มหนังสือ ${addedBooks.length} รายการสำเร็จ${skippedBooks.length > 0 ? ` (ข้าม ${skippedBooks.length} รายการที่มีอยู่แล้ว)` : ''}`,
+        added: addedBooks,
+        skipped: skippedBooks
+      });
     } catch (error) {
       console.error('Add book to course error:', error);
       res.status(500).json({ error: 'Failed to add book to course' });

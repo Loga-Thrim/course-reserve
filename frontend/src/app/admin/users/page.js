@@ -13,11 +13,11 @@ export default function CMSUsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -114,7 +114,10 @@ export default function CMSUsersPage() {
       <div>
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">จัดการผู้ใช้</h1>
-          <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
+          <button
+            onClick={handleCreate}
+            className="btn-primary flex items-center gap-2"
+          >
             <FiPlus /> เพิ่มผู้ใช้
           </button>
         </div>
@@ -141,38 +144,68 @@ export default function CMSUsersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ชื่อ</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">อีเมล</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">คณะ</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">บทบาท</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">จัดการ</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  ID
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  ชื่อ
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  อีเมล
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  คณะ
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  บทบาท
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  จัดการ
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     กำลังโหลด...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     ไม่พบข้อมูล
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">{user.id}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{user.faculty || "-"}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {user.id}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {user.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.faculty || "-"}
+                    </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === "admin" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.role === "admin"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
                         {user.role}
                       </span>
                     </td>
@@ -229,11 +262,11 @@ export default function CMSUsersPage() {
 
         {/* Modal */}
         {showModal && (
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={() => setShowModal(false)}
           >
-            <div 
+            <div
               className="bg-white rounded-lg p-8 max-w-md w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
@@ -241,68 +274,71 @@ export default function CMSUsersPage() {
                 <h2 className="text-2xl font-bold text-gray-800">
                   {modalMode === "create" ? "เพิ่มผู้ใช้" : "แก้ไขผู้ใช้"}
                 </h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
                   <FiX size={24} />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ชื่อ
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="input-field w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    อีเมล
+                  </label>
                   <input
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="input-field w-full"
                   />
                 </div>
 
                 {modalMode === "create" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      รหัสผ่าน
+                    </label>
                     <input
                       type="password"
                       required
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                       className="input-field w-full"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">คณะ</label>
-                  <select
-                    value={formData.faculty}
-                    onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
-                    className="input-field w-full"
-                  >
-                    <option value="">เลือกคณะ</option>
-                    {faculties.map((faculty) => (
-                      <option key={faculty.id} value={faculty.name}>
-                        {faculty.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">บทบาท</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    บทบาท
+                  </label>
                   <select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, role: e.target.value })
+                    }
                     className="input-field w-full"
                   >
                     <option value="user">User</option>
