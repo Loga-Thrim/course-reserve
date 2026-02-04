@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS course_instructors (
 CREATE TABLE IF NOT EXISTS course_books (
     id SERIAL PRIMARY KEY,
     course_id INTEGER REFERENCES professor_courses(id) ON DELETE CASCADE,
-    book_id INTEGER,
+    book_id VARCHAR(50),
     barcode VARCHAR(50),
     title VARCHAR(500) NOT NULL,
     author VARCHAR(500),
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS course_files (
 CREATE TABLE IF NOT EXISTS book_suggestions (
     id SERIAL PRIMARY KEY,
     course_id INTEGER REFERENCES professor_courses(id) ON DELETE CASCADE,
-    book_id INTEGER,
+    book_id VARCHAR(50),
     title VARCHAR(500),
     author VARCHAR(500),
     publisher VARCHAR(500),
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS book_suggestions (
 CREATE TABLE IF NOT EXISTS course_recommended_books (
     id SERIAL PRIMARY KEY,
     course_id INTEGER REFERENCES professor_courses(id) ON DELETE CASCADE,
-    book_id INTEGER,
+    book_id VARCHAR(50),
     title VARCHAR(500) NOT NULL,
     author VARCHAR(500),
     publisher VARCHAR(500),
@@ -134,7 +134,8 @@ CREATE TABLE IF NOT EXISTS course_recommended_books (
     cat_date VARCHAR(100),
     admin_recommended BOOLEAN DEFAULT FALSE,
     added_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(course_id, book_id)
 );
 
 -- Activity logs table
