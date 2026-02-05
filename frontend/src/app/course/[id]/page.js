@@ -69,7 +69,7 @@ export default function CourseDetailPage() {
       if (curriculumRes.data.length > 0) {
         const curriculum = curriculumRes.data[0];
         const foundCourse = curriculum.courses.find(
-          (c) => c.id === parseInt(courseId)
+          (c) => c.id === parseInt(courseId),
         );
         if (foundCourse) {
           setCourse({ ...foundCourse, faculty_name: curriculum.faculty_name });
@@ -137,16 +137,20 @@ export default function CourseDetailPage() {
     // Auto check status when modal opens
     try {
       const response = await studentAPI.getLineBorrowStatus(
-        currentUser.barcode
+        currentUser.barcode,
       );
 
       setStatusChecked(true);
 
       if (response.data.success && response.data.data) {
         const borrowData = response.data.data;
-        setBorrowStatus(borrowData);
+        const bookIsbn = book.isbn.split(" ")[0];
 
-        if (String(borrowData.bib_id) === String(book.id)) {
+        setBorrowStatus(
+          borrowData.find((b) => b.isbn.split(" ")[0] === bookIsbn),
+        );
+
+        if (borrowData.some((b) => b.isbn.split(" ")[0] === bookIsbn)) {
           setCanBorrow(false);
         } else {
           setCanBorrow(true);
@@ -156,6 +160,7 @@ export default function CourseDetailPage() {
         setCanBorrow(true);
       }
     } catch (error) {
+      console.log("=== > ", error);
       setStatusChecked(true);
       setBorrowStatus(null);
       setCanBorrow(true);
@@ -195,7 +200,7 @@ export default function CourseDetailPage() {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.error || "ไม่สามารถเชื่อมต่อระบบยืมผ่านไลน์ได้"
+        error.response?.data?.error || "ไม่สามารถเชื่อมต่อระบบยืมผ่านไลน์ได้",
       );
     } finally {
       setBorrowingLine(false);

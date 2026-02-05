@@ -155,7 +155,7 @@ const BookCard = memo(
         </div>
       </div>
     </div>
-  )
+  ),
 );
 
 BookCard.displayName = "BookCard";
@@ -236,7 +236,7 @@ export default function CourseBooksPage() {
       const courseIdFromUrl = searchParams.get("courseId");
       if (courseIdFromUrl) {
         const targetCourse = response.data.find(
-          (c) => c.id === parseInt(courseIdFromUrl)
+          (c) => c.id === parseInt(courseIdFromUrl),
         );
         if (targetCourse) {
           setSelectedCourse(targetCourse);
@@ -259,7 +259,7 @@ export default function CourseBooksPage() {
     try {
       setLoadingCourseBooks(true);
       const response = await professorCourseBooksAPI.getCourseBooks(
-        selectedCourse.id
+        selectedCourse.id,
       );
       setCourseBooks(response.data);
     } catch (error) {
@@ -277,7 +277,7 @@ export default function CourseBooksPage() {
       setKeywords([]);
       setCurrentPage(1);
       const response = await professorCourseBooksAPI.getBookSuggestions(
-        selectedCourse.id
+        selectedCourse.id,
       );
       setSuggestedBooks(response.data.books || []);
       setKeywords(response.data.keywords || []);
@@ -297,14 +297,14 @@ export default function CourseBooksPage() {
       setCurrentPage(1);
       await professorCourseBooksAPI.refreshBookSuggestions(selectedCourse.id);
       const response = await professorCourseBooksAPI.getBookSuggestions(
-        selectedCourse.id
+        selectedCourse.id,
       );
       setSuggestedBooks(response.data.books || []);
       setKeywords(response.data.keywords || []);
     } catch (error) {
       console.error("Error refreshing suggestions:", error);
       toast.error(
-        "ไม่สามารถรีเฟรชหนังสือแนะนำได้ " + error.response?.data?.error
+        "ไม่สามารถรีเฟรชหนังสือแนะนำได้ " + error.response?.data?.error,
       );
     } finally {
       setLoadingSuggestions(false);
@@ -313,20 +313,20 @@ export default function CourseBooksPage() {
 
   const totalPages = useMemo(
     () => Math.ceil(suggestedBooks.length / ITEMS_PER_PAGE),
-    [suggestedBooks.length]
+    [suggestedBooks.length],
   );
   const paginatedBooks = useMemo(
     () =>
       suggestedBooks.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
+        currentPage * ITEMS_PER_PAGE,
       ),
-    [suggestedBooks, currentPage]
+    [suggestedBooks, currentPage],
   );
 
   const addedBookIds = useMemo(
     () => new Set(courseBooks.map((cb) => cb.book_id)),
-    [courseBooks]
+    [courseBooks],
   );
 
   // Group books by book_id to show copies count
@@ -356,7 +356,7 @@ export default function CourseBooksPage() {
 
   const isBookAdded = useCallback(
     (bookId) => addedBookIds.has(bookId),
-    [addedBookIds]
+    [addedBookIds],
   );
 
   const handleAddBook = useCallback(
@@ -386,7 +386,7 @@ export default function CourseBooksPage() {
         setAddingBook(null);
       }
     },
-    [selectedCourse]
+    [selectedCourse],
   );
 
   const handleRemoveBook = useCallback(
@@ -397,14 +397,14 @@ export default function CourseBooksPage() {
       try {
         await professorCourseBooksAPI.removeBookFromCourse(
           selectedCourse.id,
-          bookId
+          bookId,
         );
         fetchCourseBooks();
       } catch (error) {
         toast.error(error.response?.data?.error || "ไม่สามารถลบหนังสือได้");
       }
     },
-    [selectedCourse]
+    [selectedCourse],
   );
 
   const handleSearch = async (e) => {
@@ -416,7 +416,7 @@ export default function CourseBooksPage() {
       setSearchResults([]);
       setSelectedSearchBooks(new Set()); // Clear selection on new search
       const response = await professorCourseBooksAPI.searchBooks(
-        searchKeyword.trim()
+        searchKeyword.trim(),
       );
       setSearchResults(response.data.books || []);
     } catch (error) {
@@ -438,17 +438,20 @@ export default function CourseBooksPage() {
     // Auto check status when modal opens
     try {
       const response = await professorCourseBooksAPI.getLineBorrowStatus(
-        currentUser.barcode
+        currentUser.barcode,
       );
 
       setStatusChecked(true);
 
       if (response.data.success && response.data.data) {
         const borrowData = response.data.data;
-        setBorrowStatus(borrowData);
+        const bookIsbn = book.isbn.split(" ")[0];
 
-        // Check if the book is already borrowed (compare bib_id)
-        if (String(borrowData.bib_id) === String(book.id)) {
+        setBorrowStatus(
+          borrowData.find((b) => b.isbn.split(" ")[0] === bookIsbn),
+        );
+
+        if (borrowData.some((b) => b.isbn.split(" ")[0] === bookIsbn)) {
           setCanBorrow(false);
         } else {
           setCanBorrow(true);
@@ -504,7 +507,7 @@ export default function CourseBooksPage() {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.error || "ไม่สามารถเชื่อมต่อระบบยืมผ่านไลน์ได้"
+        error.response?.data?.error || "ไม่สามารถเชื่อมต่อระบบยืมผ่านไลน์ได้",
       );
     } finally {
       setBorrowingLine(false);
@@ -537,7 +540,7 @@ export default function CourseBooksPage() {
     if (!selectedCourse || selectedSearchBooks.size === 0) return;
 
     const booksToAdd = searchResults.filter(
-      (book) => selectedSearchBooks.has(book.id) && !isBookAdded(book.id)
+      (book) => selectedSearchBooks.has(book.id) && !isBookAdded(book.id),
     );
     if (booksToAdd.length === 0) return;
 
@@ -597,7 +600,7 @@ export default function CourseBooksPage() {
     if (!selectedCourse || selectedCourseBooks.size === 0) return;
     if (
       !confirm(
-        `ต้องการลบหนังสือ ${selectedCourseBooks.size} เล่มออกจากรายวิชานี้หรือไม่?`
+        `ต้องการลบหนังสือ ${selectedCourseBooks.size} เล่มออกจากรายวิชานี้หรือไม่?`,
       )
     )
       return;
@@ -610,7 +613,7 @@ export default function CourseBooksPage() {
         try {
           await professorCourseBooksAPI.removeBookFromCourse(
             selectedCourse.id,
-            bookId
+            bookId,
           );
           successCount++;
         } catch (error) {
@@ -663,7 +666,7 @@ export default function CourseBooksPage() {
       "download",
       `หนังสือรายวิชา_${
         selectedCourse.code_en || selectedCourse.code_th
-      }_${new Date().toLocaleDateString("th-TH")}.csv`
+      }_${new Date().toLocaleDateString("th-TH")}.csv`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -719,7 +722,7 @@ export default function CourseBooksPage() {
             ${headers
               .map(
                 (h) =>
-                  `<td style="padding:8px;border:1px solid #ccc;">${h}</td>`
+                  `<td style="padding:8px;border:1px solid #ccc;">${h}</td>`,
               )
               .join("")}
           </tr>
@@ -732,11 +735,11 @@ export default function CourseBooksPage() {
                   (cell, cellIdx) =>
                     `<td style="padding:6px;border:1px solid #e5e7eb;${
                       cellIdx === 0 || cellIdx === 6 ? "text-align:center;" : ""
-                    }">${cell}</td>`
+                    }">${cell}</td>`,
                 )
                 .join("")}
             </tr>
-          `
+          `,
             )
             .join("")}
         </table>
@@ -754,7 +757,7 @@ export default function CourseBooksPage() {
       "download",
       `หนังสือรายวิชา_${
         selectedCourse.code_en || selectedCourse.code_th
-      }_${new Date().toLocaleDateString("th-TH")}.xls`
+      }_${new Date().toLocaleDateString("th-TH")}.xls`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -1082,7 +1085,8 @@ export default function CourseBooksPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <FiBook className="text-emerald-600" />
-                    หนังสือในรายวิชา ({groupedCourseBooks.length} รายการ, {courseBooks.length} เล่ม)
+                    หนังสือในรายวิชา ({groupedCourseBooks.length} รายการ,{" "}
+                    {courseBooks.length} เล่ม)
                   </h2>
 
                   {/* Export Buttons */}
@@ -1160,22 +1164,27 @@ export default function CourseBooksPage() {
                   ) : (
                     <div className="space-y-3">
                       {groupedCourseBooks.map((book) => (
-                        <div key={book.book_id} className="rounded-xl border shadow-sm bg-white border-gray-100">
+                        <div
+                          key={book.book_id}
+                          className="rounded-xl border shadow-sm bg-white border-gray-100"
+                        >
                           {/* Main Book Card */}
                           <div className="p-4">
                             <div className="flex gap-3">
                               {/* Book Cover */}
-                              <div 
+                              <div
                                 className="w-16 h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
-                                onClick={() => setSelectedBook({
-                                  id: book.book_id,
-                                  title: book.title,
-                                  author: book.author,
-                                  publisher: book.publisher,
-                                  callnumber: book.callnumber,
-                                  bookcover: book.bookcover,
-                                  isbn: book.isbn,
-                                })}
+                                onClick={() =>
+                                  setSelectedBook({
+                                    id: book.book_id,
+                                    title: book.title,
+                                    author: book.author,
+                                    publisher: book.publisher,
+                                    callnumber: book.callnumber,
+                                    bookcover: book.bookcover,
+                                    isbn: book.isbn,
+                                  })
+                                }
                               >
                                 {book.bookcover ? (
                                   <img
@@ -1195,17 +1204,19 @@ export default function CourseBooksPage() {
 
                               {/* Book Info */}
                               <div className="flex-1 min-w-0">
-                                <h3 
+                                <h3
                                   className="font-medium text-gray-800 text-sm line-clamp-2 cursor-pointer hover:text-emerald-600"
-                                  onClick={() => setSelectedBook({
-                                    id: book.book_id,
-                                    title: book.title,
-                                    author: book.author,
-                                    publisher: book.publisher,
-                                    callnumber: book.callnumber,
-                                    bookcover: book.bookcover,
-                                    isbn: book.isbn,
-                                  })}
+                                  onClick={() =>
+                                    setSelectedBook({
+                                      id: book.book_id,
+                                      title: book.title,
+                                      author: book.author,
+                                      publisher: book.publisher,
+                                      callnumber: book.callnumber,
+                                      bookcover: book.bookcover,
+                                      isbn: book.isbn,
+                                    })
+                                  }
                                 >
                                   {book.title}
                                 </h3>
@@ -1214,7 +1225,7 @@ export default function CourseBooksPage() {
                                     {book.author}
                                   </p>
                                 )}
-                                
+
                                 {/* Copy Count Badge */}
                                 <div className="flex items-center gap-2 mt-2">
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
@@ -1223,11 +1234,21 @@ export default function CourseBooksPage() {
                                   </span>
                                   {book.copyCount > 1 && (
                                     <button
-                                      onClick={() => setExpandedBookId(expandedBookId === book.book_id ? null : book.book_id)}
+                                      onClick={() =>
+                                        setExpandedBookId(
+                                          expandedBookId === book.book_id
+                                            ? null
+                                            : book.book_id,
+                                        )
+                                      }
                                       className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
                                     >
-                                      {expandedBookId === book.book_id ? "ซ่อนรายละเอียด" : "ดูรายละเอียด"}
-                                      <FiChevronDown className={`transition-transform ${expandedBookId === book.book_id ? "rotate-180" : ""}`} />
+                                      {expandedBookId === book.book_id
+                                        ? "ซ่อนรายละเอียด"
+                                        : "ดูรายละเอียด"}
+                                      <FiChevronDown
+                                        className={`transition-transform ${expandedBookId === book.book_id ? "rotate-180" : ""}`}
+                                      />
                                     </button>
                                   )}
                                 </div>
@@ -1237,9 +1258,15 @@ export default function CourseBooksPage() {
                               <div className="flex flex-col gap-1">
                                 <button
                                   onClick={() => {
-                                    if (confirm(`ต้องการลบหนังสือ "${book.title}" ทั้งหมด ${book.copyCount} เล่มออกจากรายวิชานี้หรือไม่?`)) {
+                                    if (
+                                      confirm(
+                                        `ต้องการลบหนังสือ "${book.title}" ทั้งหมด ${book.copyCount} เล่มออกจากรายวิชานี้หรือไม่?`,
+                                      )
+                                    ) {
                                       // Remove all copies
-                                      book.copies.forEach(copy => handleRemoveBook(copy.id));
+                                      book.copies.forEach((copy) =>
+                                        handleRemoveBook(copy.id),
+                                      );
                                     }
                                   }}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -1252,59 +1279,74 @@ export default function CourseBooksPage() {
                           </div>
 
                           {/* Expanded Copies List */}
-                          {expandedBookId === book.book_id && book.copyCount > 1 && (
-                            <div className="border-t border-gray-100 bg-gray-50/50 p-3">
-                              <p className="text-xs font-medium text-gray-500 mb-2">รายละเอียดแต่ละเล่ม:</p>
-                              <div className="space-y-2">
-                                {book.copies.map((copy, idx) => (
-                                  <div 
-                                    key={copy.id} 
-                                    className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 text-xs"
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-700">เล่มที่ {idx + 1}</span>
-                                        {copy.barcode && (
-                                          <span className="text-gray-400">({copy.barcode})</span>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-gray-500">
-                                        {copy.callnumber && (
-                                          <span className="flex items-center gap-1">
-                                            <FiHash className="text-xs" /> {copy.callnumber}
-                                          </span>
-                                        )}
-                                        {copy.location && (
-                                          <span className="flex items-center gap-1">
-                                            <FiMapPin className="text-xs" /> {copy.location}
-                                          </span>
-                                        )}
-                                        {copy.item_status && (
-                                          <span className={`px-1.5 py-0.5 rounded text-xs ${
-                                            copy.item_status === "Available" 
-                                              ? "bg-green-100 text-green-700" 
-                                              : "bg-amber-100 text-amber-700"
-                                          }`}>
-                                            {copy.item_status}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {copy.collection_name && (
-                                        <p className="text-gray-400 mt-1 truncate">{copy.collection_name}</p>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={() => handleRemoveBook(copy.id)}
-                                      className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
-                                      title="ลบเล่มนี้"
+                          {expandedBookId === book.book_id &&
+                            book.copyCount > 1 && (
+                              <div className="border-t border-gray-100 bg-gray-50/50 p-3">
+                                <p className="text-xs font-medium text-gray-500 mb-2">
+                                  รายละเอียดแต่ละเล่ม:
+                                </p>
+                                <div className="space-y-2">
+                                  {book.copies.map((copy, idx) => (
+                                    <div
+                                      key={copy.id}
+                                      className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 text-xs"
                                     >
-                                      <FiTrash2 className="text-xs" />
-                                    </button>
-                                  </div>
-                                ))}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-gray-700">
+                                            เล่มที่ {idx + 1}
+                                          </span>
+                                          {copy.barcode && (
+                                            <span className="text-gray-400">
+                                              ({copy.barcode})
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-gray-500">
+                                          {copy.callnumber && (
+                                            <span className="flex items-center gap-1">
+                                              <FiHash className="text-xs" />{" "}
+                                              {copy.callnumber}
+                                            </span>
+                                          )}
+                                          {copy.location && (
+                                            <span className="flex items-center gap-1">
+                                              <FiMapPin className="text-xs" />{" "}
+                                              {copy.location}
+                                            </span>
+                                          )}
+                                          {copy.item_status && (
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded text-xs ${
+                                                copy.item_status === "Available"
+                                                  ? "bg-green-100 text-green-700"
+                                                  : "bg-amber-100 text-amber-700"
+                                              }`}
+                                            >
+                                              {copy.item_status}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {copy.collection_name && (
+                                          <p className="text-gray-400 mt-1 truncate">
+                                            {copy.collection_name}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={() =>
+                                          handleRemoveBook(copy.id)
+                                        }
+                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
+                                        title="ลบเล่มนี้"
+                                      >
+                                        <FiTrash2 className="text-xs" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       ))}
                     </div>
@@ -1480,7 +1522,7 @@ export default function CourseBooksPage() {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
-                          }
+                          },
                         )}
                       </p>
                     </div>

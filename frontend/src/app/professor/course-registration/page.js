@@ -3,13 +3,27 @@
 import { useEffect, useState } from "react";
 import ProfessorLayout from "../../../components/professor/ProfessorLayout";
 import { professorCourseRegistrationAPI } from "../../../lib/professorApi";
-import { FiEdit, FiTrash2, FiPlus, FiX, FiSearch, FiUpload, FiFile } from "react-icons/fi";
+import {
+  FiEdit,
+  FiTrash2,
+  FiPlus,
+  FiX,
+  FiSearch,
+  FiUpload,
+  FiFile,
+} from "react-icons/fi";
 import toast from "react-hot-toast";
-import { useAuth } from "../../../context/AuthContext";
 import { BASE_PATH } from "../../../lib/basePath";
 
 export default function CourseRegistrationPage() {
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("professorUser");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
   const [courses, setCourses] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [curriculums, setCurriculums] = useState([]);
@@ -35,7 +49,7 @@ export default function CourseRegistrationPage() {
     description_th: "",
     description_en: "",
     keywords: [""],
-    website: ""
+    website: "",
   });
 
   useEffect(() => {
@@ -74,7 +88,8 @@ export default function CourseRegistrationPage() {
 
   const fetchCurriculums = async (facultyId) => {
     try {
-      const response = await professorCourseRegistrationAPI.getCurriculums(facultyId);
+      const response =
+        await professorCourseRegistrationAPI.getCurriculums(facultyId);
       setCurriculums(response.data);
     } catch (error) {
       console.error("Error fetching curriculums:", error);
@@ -93,11 +108,16 @@ export default function CourseRegistrationPage() {
       code_en: "",
       name_th: "",
       name_en: "",
-      instructors: user?.name ? [user.name] : [""],
+      instructors: user?.name
+        ? [user.name]
+        : [
+            JSON.parse(localStorage.getItem("professorUser") || "{}")?.name ||
+              "",
+          ],
       description_th: "",
       description_en: "",
       keywords: [""],
-      website: ""
+      website: "",
     });
     setShowModal(true);
   };
@@ -105,9 +125,10 @@ export default function CourseRegistrationPage() {
   const handleEdit = (course) => {
     setModalMode("edit");
     setSelectedCourse(course);
-    const instructorNames = course.instructors && course.instructors.length > 0
-      ? course.instructors.map(i => i.instructor_name)
-      : [""];
+    const instructorNames =
+      course.instructors && course.instructors.length > 0
+        ? course.instructors.map((i) => i.instructor_name)
+        : [""];
     setFormData({
       faculty_id: course.faculty_id || "",
       curriculum_id: course.curriculum_id || "",
@@ -119,7 +140,7 @@ export default function CourseRegistrationPage() {
       description_th: course.description_th || "",
       description_en: course.description_en || "",
       keywords: course.keywords?.length > 0 ? course.keywords : [""],
-      website: course.website || ""
+      website: course.website || "",
     });
     if (course.faculty_id) {
       fetchCurriculums(course.faculty_id);
@@ -149,7 +170,9 @@ export default function CourseRegistrationPage() {
     }
 
     // Validation: ต้องมีอาจารย์ผู้สอนอย่างน้อย 1 คน
-    const validInstructors = formData.instructors.filter(i => i.trim() !== "");
+    const validInstructors = formData.instructors.filter(
+      (i) => i.trim() !== "",
+    );
     if (validInstructors.length === 0) {
       toast.error("กรุณาระบุอาจารย์ผู้สอนอย่างน้อย 1 คน");
       return;
@@ -159,27 +182,34 @@ export default function CourseRegistrationPage() {
       const submitData = {
         ...formData,
         instructors: validInstructors,
-        keywords: formData.keywords.filter(k => k.trim() !== "")
+        keywords: formData.keywords.filter((k) => k.trim() !== ""),
       };
 
       if (modalMode === "create") {
-        const response = await professorCourseRegistrationAPI.create(submitData);
+        const response =
+          await professorCourseRegistrationAPI.create(submitData);
         const newCourseId = response.data.id;
-        
+
         if (pendingFiles.length > 0 && newCourseId) {
           for (const file of pendingFiles) {
             try {
-              await professorCourseRegistrationAPI.uploadFile(newCourseId, file);
+              await professorCourseRegistrationAPI.uploadFile(
+                newCourseId,
+                file,
+              );
             } catch (err) {
               console.error("Error uploading file:", err);
             }
           }
           setPendingFiles([]);
         }
-        
+
         toast.success("สร้างรายวิชาสำเร็จ");
       } else {
-        await professorCourseRegistrationAPI.update(selectedCourse.id, submitData);
+        await professorCourseRegistrationAPI.update(
+          selectedCourse.id,
+          submitData,
+        );
         toast.success("บันทึกการแก้ไขสำเร็จ");
       }
       setShowModal(false);
@@ -193,7 +223,7 @@ export default function CourseRegistrationPage() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
@@ -245,85 +275,89 @@ export default function CourseRegistrationPage() {
     if (!file) return;
 
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error('ไฟล์ที่อนุญาต: PDF, Word, PowerPoint, Excel เท่านั้น');
-      e.target.value = '';
+      toast.error("ไฟล์ที่อนุญาต: PDF, Word, PowerPoint, Excel เท่านั้น");
+      e.target.value = "";
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('ขนาดไฟล์ต้องไม่เกิน 10MB');
-      e.target.value = '';
+      toast.error("ขนาดไฟล์ต้องไม่เกิน 10MB");
+      e.target.value = "";
       return;
     }
 
     if (modalMode === "create") {
-      setPendingFiles(prev => [...prev, file]);
-      toast.success('เพิ่มไฟล์แล้ว (จะอัปโหลดเมื่อบันทึกรายวิชา)');
-      e.target.value = '';
+      setPendingFiles((prev) => [...prev, file]);
+      toast.success("เพิ่มไฟล์แล้ว (จะอัปโหลดเมื่อบันทึกรายวิชา)");
+      e.target.value = "";
       return;
     }
 
     try {
       setUploadingFile(true);
       await professorCourseRegistrationAPI.uploadFile(selectedCourse.id, file);
-      toast.success('อัปโหลดไฟล์สำเร็จ');
+      toast.success("อัปโหลดไฟล์สำเร็จ");
       fetchCourseFiles(selectedCourse.id);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'อัปโหลดไฟล์ไม่สำเร็จ');
+      toast.error(error.response?.data?.error || "อัปโหลดไฟล์ไม่สำเร็จ");
     } finally {
       setUploadingFile(false);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
   const removePendingFile = (index) => {
-    setPendingFiles(prev => prev.filter((_, i) => i !== index));
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteFile = async (fileId) => {
-    if (!confirm('ต้องการลบไฟล์นี้หรือไม่?')) return;
+    if (!confirm("ต้องการลบไฟล์นี้หรือไม่?")) return;
 
     try {
-      await professorCourseRegistrationAPI.deleteFile(selectedCourse.id, fileId);
-      toast.success('ลบไฟล์สำเร็จ');
+      await professorCourseRegistrationAPI.deleteFile(
+        selectedCourse.id,
+        fileId,
+      );
+      toast.success("ลบไฟล์สำเร็จ");
       fetchCourseFiles(selectedCourse.id);
     } catch (error) {
-      toast.error('ลบไฟล์ไม่สำเร็จ');
+      toast.error("ลบไฟล์ไม่สำเร็จ");
     }
   };
 
   const getFileIcon = (fileType) => {
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word') || fileType.includes('document')) return '📝';
-    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📊';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📈';
-    return '📁';
+    if (fileType.includes("pdf")) return "📄";
+    if (fileType.includes("word") || fileType.includes("document")) return "📝";
+    if (fileType.includes("powerpoint") || fileType.includes("presentation"))
+      return "📊";
+    if (fileType.includes("excel") || fileType.includes("spreadsheet"))
+      return "📈";
+    return "📁";
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
-  const filteredCourses = courses.filter(course => {
+  const filteredCourses = courses.filter((course) => {
     const query = searchQuery.toLowerCase();
-    const matchesSearch = (
-      (course.name_th || '').toLowerCase().includes(query) ||
-      (course.name_en || '').toLowerCase().includes(query) ||
-      (course.code_th || '').toLowerCase().includes(query) ||
-      (course.code_en || '').toLowerCase().includes(query)
-    );
+    const matchesSearch =
+      (course.name_th || "").toLowerCase().includes(query) ||
+      (course.name_en || "").toLowerCase().includes(query) ||
+      (course.code_th || "").toLowerCase().includes(query) ||
+      (course.code_en || "").toLowerCase().includes(query);
 
     return matchesSearch;
   });
@@ -332,8 +366,13 @@ export default function CourseRegistrationPage() {
     <ProfessorLayout>
       <div>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">ลงทะเบียนรายวิชา</h1>
-          <button onClick={handleCreate} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+            ลงทะเบียนรายวิชา
+          </h1>
+          <button
+            onClick={handleCreate}
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+          >
             <FiPlus /> เพิ่มรายวิชา
           </button>
         </div>
@@ -361,31 +400,40 @@ export default function CourseRegistrationPage() {
         ) : courses.length === 0 ? (
           <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow-md p-12 text-center border border-emerald-100/50">
             <p className="text-gray-600 text-lg font-medium">ยังไม่มีรายวิชา</p>
-            <p className="text-gray-400 mt-2">คลิก "เพิ่มรายวิชา" เพื่อเริ่มต้น</p>
+            <p className="text-gray-400 mt-2">
+              คลิก "เพิ่มรายวิชา" เพื่อเริ่มต้น
+            </p>
           </div>
         ) : filteredCourses.length === 0 ? (
           <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow-md p-12 text-center border border-emerald-100/50">
-            <p className="text-gray-600 text-lg font-medium">ไม่พบรายวิชาที่ค้นหา</p>
+            <p className="text-gray-600 text-lg font-medium">
+              ไม่พบรายวิชาที่ค้นหา
+            </p>
             <p className="text-gray-400 mt-2">ลองค้นหาด้วยคำอื่น</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredCourses.map((course) => (
-              <div key={course.id} className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow border border-emerald-100/50">
+              <div
+                key={course.id}
+                className="bg-gradient-to-br from-white to-emerald-50/30 rounded-xl shadow border border-emerald-100/50"
+              >
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-800 mb-0.5">
-                        <a 
+                        <a
                           href={`${BASE_PATH}/professor/course-books?courseId=${course.id}`}
                           className="text-emerald-600 hover:text-emerald-700 hover:underline"
                         >
                           {course.code_en || course.code_th}
                         </a>
-                        {' - '}{course.name_th}
+                        {" - "}
+                        {course.name_th}
                       </h3>
                       <p className="text-gray-500 text-xs">
-                        {course.code_th && course.code_en ? course.code_th : ''} {course.name_en ? `- ${course.name_en}` : ''}
+                        {course.code_th && course.code_en ? course.code_th : ""}{" "}
+                        {course.name_en ? `- ${course.name_en}` : ""}
                       </p>
                     </div>
                     <div className="flex gap-1 ml-2">
@@ -412,7 +460,11 @@ export default function CourseRegistrationPage() {
                     )}
                     {course.curriculum_name && (
                       <span className="inline-block px-2 py-0.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-full text-xs font-medium">
-                        {course.curriculum_name}{course.curriculum_level && !course.curriculum_name?.includes('ศึกษาทั่วไป') ? ` (${course.curriculum_level})` : ''}
+                        {course.curriculum_name}
+                        {course.curriculum_level &&
+                        !course.curriculum_name?.includes("ศึกษาทั่วไป")
+                          ? ` (${course.curriculum_level})`
+                          : ""}
                       </span>
                     )}
                   </div>
@@ -422,13 +474,17 @@ export default function CourseRegistrationPage() {
                     <div className="mb-2">
                       <p className="text-gray-600 text-xs">
                         <span className="font-medium">อาจารย์ผู้สอน:</span>{" "}
-                        {course.instructors.map(i => i.instructor_name).join(", ")}
+                        {course.instructors
+                          .map((i) => i.instructor_name)
+                          .join(", ")}
                       </p>
                     </div>
                   )}
 
                   <div className="mb-2">
-                    <p className="text-gray-600 text-xs line-clamp-2">{course.description_th}</p>
+                    <p className="text-gray-600 text-xs line-clamp-2">
+                      {course.description_th}
+                    </p>
                   </div>
 
                   {course.website && (
@@ -451,9 +507,7 @@ export default function CourseRegistrationPage() {
 
         {/* Modal */}
         {showModal && (
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          >
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div
               className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
@@ -485,11 +539,13 @@ export default function CourseRegistrationPage() {
                       className="input-field w-full"
                     >
                       <option value="">เลือกคณะ</option>
-                      {faculties.filter(f => !f.name?.includes('กองบริการศึกษา')).map((faculty) => (
-                        <option key={faculty.id} value={faculty.id}>
-                          {faculty.name}
-                        </option>
-                      ))}
+                      {faculties
+                        .filter((f) => !f.name?.includes("กองบริการศึกษา"))
+                        .map((faculty) => (
+                          <option key={faculty.id} value={faculty.id}>
+                            {faculty.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
 
@@ -509,7 +565,11 @@ export default function CourseRegistrationPage() {
                       <option value="">เลือกหลักสูตร</option>
                       {curriculums.map((curriculum) => (
                         <option key={curriculum.id} value={curriculum.id}>
-                          {curriculum.name}{curriculum.level && !curriculum.name?.includes('ศึกษาทั่วไป') ? ` (${curriculum.level})` : ''}
+                          {curriculum.name}
+                          {curriculum.level &&
+                          !curriculum.name?.includes("ศึกษาทั่วไป")
+                            ? ` (${curriculum.level})`
+                            : ""}
                         </option>
                       ))}
                     </select>
@@ -588,8 +648,10 @@ export default function CourseRegistrationPage() {
                           <input
                             type="text"
                             value={instructor}
-                            onChange={(e) => handleInstructorChange(index, e.target.value)}
-                            className={`input-field flex-1 ${index === 0 ? 'bg-gray-100' : ''}`}
+                            onChange={(e) =>
+                              handleInstructorChange(index, e.target.value)
+                            }
+                            className={`input-field flex-1 ${index === 0 ? "bg-gray-100" : ""}`}
                             placeholder="ตัวอย่าง ผศ.ดร.สมชาย ใจดี"
                             required={index === 0}
                             disabled={index === 0}
@@ -619,7 +681,8 @@ export default function CourseRegistrationPage() {
                   {/* 6. Thai Description */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      คำอธิบายรายวิชา (ไทย) <span className="text-red-500">*</span>
+                      คำอธิบายรายวิชา (ไทย){" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="description_th"
@@ -658,7 +721,9 @@ export default function CourseRegistrationPage() {
                           <input
                             type="text"
                             value={keyword}
-                            onChange={(e) => handleKeywordChange(index, e.target.value)}
+                            onChange={(e) =>
+                              handleKeywordChange(index, e.target.value)
+                            }
                             className="input-field flex-1"
                             placeholder="ตัวอย่าง การเขียนโปรแกรม, Python, Algorithm"
                           />
@@ -689,7 +754,7 @@ export default function CourseRegistrationPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ไฟล์ประกอบการสอน
                     </label>
-                    
+
                     <div className="space-y-3">
                       {/* Upload area */}
                       <label className="block border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer">
@@ -708,8 +773,12 @@ export default function CourseRegistrationPage() {
                         ) : (
                           <>
                             <FiUpload className="mx-auto text-2xl text-gray-400 mb-1" />
-                            <p className="text-sm text-gray-500">คลิกเพื่ออัปโหลดไฟล์</p>
-                            <p className="text-xs text-gray-400">PDF, Word, PowerPoint, Excel (สูงสุด 10MB)</p>
+                            <p className="text-sm text-gray-500">
+                              คลิกเพื่ออัปโหลดไฟล์
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              PDF, Word, PowerPoint, Excel (สูงสุด 10MB)
+                            </p>
                           </>
                         )}
                       </label>
@@ -717,14 +786,25 @@ export default function CourseRegistrationPage() {
                       {/* Pending files (for new course) */}
                       {modalMode === "create" && pendingFiles.length > 0 && (
                         <div className="space-y-2">
-                          <p className="text-xs text-amber-600 font-medium">ไฟล์ที่รอการอัปโหลด:</p>
+                          <p className="text-xs text-amber-600 font-medium">
+                            ไฟล์ที่รอการอัปโหลด:
+                          </p>
                           {pendingFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                            <div
+                              key={index}
+                              className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2"
+                            >
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-lg">{getFileIcon(file.type)}</span>
+                                <span className="text-lg">
+                                  {getFileIcon(file.type)}
+                                </span>
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
-                                  <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                                  <p className="text-sm font-medium text-gray-700 truncate">
+                                    {file.name}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {formatFileSize(file.size)}
+                                  </p>
                                 </div>
                               </div>
                               <button
@@ -743,12 +823,21 @@ export default function CourseRegistrationPage() {
                       {modalMode === "edit" && courseFiles.length > 0 && (
                         <div className="space-y-2">
                           {courseFiles.map((file) => (
-                            <div key={file.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                            <div
+                              key={file.id}
+                              className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                            >
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-lg">{getFileIcon(file.file_type)}</span>
+                                <span className="text-lg">
+                                  {getFileIcon(file.file_type)}
+                                </span>
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium text-gray-700 truncate">{file.original_name}</p>
-                                  <p className="text-xs text-gray-400">{formatFileSize(file.file_size)}</p>
+                                  <p className="text-sm font-medium text-gray-700 truncate">
+                                    {file.original_name}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {formatFileSize(file.file_size)}
+                                  </p>
                                 </div>
                               </div>
                               <button
@@ -789,7 +878,10 @@ export default function CourseRegistrationPage() {
                   >
                     ยกเลิก
                   </button>
-                  <button type="submit" className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg hover:scale-105 transition-all duration-200">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg hover:scale-105 transition-all duration-200"
+                  >
                     {modalMode === "create" ? "สร้างรายวิชา" : "บันทึกการแก้ไข"}
                   </button>
                 </div>

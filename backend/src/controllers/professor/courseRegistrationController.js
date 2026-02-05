@@ -165,7 +165,7 @@ const courseRegistrationController = {
 
       const keywordsToUse = keywords || [];
       if (keywordsToUse.length > 0) {
-        fetchAndStoreRecommendedBooks(courseId, keywordsToUse)
+        fetchAndStoreRecommendedBooks(courseId, keywordsToUse, name_th || '', name_en || '')
           .catch(err => console.error(`Error fetching recommended books for course ${courseId}:`, err));
       }
 
@@ -261,7 +261,7 @@ const courseRegistrationController = {
 
       const keywordsToUse = keywords || [];
       if (keywordsToUse.length > 0) {
-        fetchAndStoreRecommendedBooks(parseInt(id), keywordsToUse)
+        fetchAndStoreRecommendedBooks(parseInt(id), keywordsToUse, name_th || '', name_en || '')
           .catch(err => console.error(`Error updating recommended books for course ${id}:`, err));
       }
 

@@ -156,7 +156,7 @@ const courseBooksController = {
         });
       }
       
-      const result = await fetchAndStoreRecommendedBooks(parseInt(courseId), keywordsToUse);
+      const result = await fetchAndStoreRecommendedBooks(parseInt(courseId), keywordsToUse, course.name_th || '', course.name_en || '');
 
       res.json({ 
         message: 'รีเฟรชหนังสือแนะนำเรียบร้อยแล้ว',

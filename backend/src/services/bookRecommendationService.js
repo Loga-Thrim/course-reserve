@@ -1,39 +1,128 @@
-const pool = require('../config/db');
-const { psruAxios, PSRU_ENDPOINTS } = require('../config/psruApi');
+const pool = require("../config/db");
+const { psruAxios, PSRU_ENDPOINTS } = require("../config/psruApi");
 
-const searchLibraryBooks = async (keyword) => {
+const searchLibraryBooks = async (
+  keyword,
+  courseNameTh = "",
+  courseNameEn = "",
+) => {
   try {
-    const response = await psruAxios.get(`${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`);
+    const results = [];
+    const seenIds = new Set();
 
-    if (response.data?.status === '200' && response.data?.message?.Display) {
-      return response.data.message.Display;
+    const addBooks = (books) => {
+      for (const book of books) {
+        if (!seenIds.has(book.Id)) {
+          seenIds.add(book.Id);
+          results.push(book);
+        }
+      }
+    };
+
+    // 1. Search with Thai course name only
+    if (courseNameTh) {
+      const responseTh = await psruAxios.get(
+        `${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(courseNameTh)}`,
+      );
+      if (
+        responseTh.data?.status === "200" &&
+        responseTh.data?.message?.Display
+      ) {
+        addBooks(responseTh.data.message.Display);
+      }
     }
-    return [];
+
+    // 2. Search with English course name only
+    if (courseNameEn) {
+      const responseEn = await psruAxios.get(
+        `${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(courseNameEn)}`,
+      );
+      if (
+        responseEn.data?.status === "200" &&
+        responseEn.data?.message?.Display
+      ) {
+        addBooks(responseEn.data.message.Display);
+      }
+    }
+
+    // 3. Search with Thai course name + keyword
+    if (courseNameTh && keyword) {
+      const searchQueryTh = `${courseNameTh} ${keyword}`;
+      const responseTh = await psruAxios.get(
+        `${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(searchQueryTh)}`,
+      );
+      if (
+        responseTh.data?.status === "200" &&
+        responseTh.data?.message?.Display
+      ) {
+        addBooks(responseTh.data.message.Display);
+      }
+    }
+
+    // 4. Search with English course name + keyword
+    if (courseNameEn && keyword) {
+      const searchQueryEn = `${courseNameEn} ${keyword}`;
+      const responseEn = await psruAxios.get(
+        `${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(searchQueryEn)}`,
+      );
+      if (
+        responseEn.data?.status === "200" &&
+        responseEn.data?.message?.Display
+      ) {
+        addBooks(responseEn.data.message.Display);
+      }
+    }
+
+    // Fallback: search with keyword only if no course names provided
+    if (!courseNameTh && !courseNameEn) {
+      const response = await psruAxios.get(
+        `${PSRU_ENDPOINTS.BOOK_KEYWORD}/${encodeURIComponent(keyword)}`,
+      );
+      if (response.data?.status === "200" && response.data?.message?.Display) {
+        return response.data.message.Display;
+      }
+    }
+
+    return results;
   } catch (error) {
     console.error(`Error searching for keyword "${keyword}":`, error.message);
     return [];
   }
 };
 
-const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
+const fetchAndStoreRecommendedBooks = async (
+  courseId,
+  keywords = [],
+  courseNameTh = "",
+  courseNameEn = "",
+) => {
   const client = await pool.connect();
-  
+
   try {
-    const validKeywords = keywords.filter(k => k && k.trim().length > 0).map(k => k.trim());
+    const validKeywords = keywords
+      .filter((k) => k && k.trim().length > 0)
+      .map((k) => k.trim());
 
     if (validKeywords.length === 0) {
       return { keywords: [], booksAdded: 0 };
     }
 
-    await client.query('DELETE FROM course_recommended_books WHERE course_id = $1', [courseId]);
+    await client.query(
+      "DELETE FROM course_recommended_books WHERE course_id = $1",
+      [courseId],
+    );
 
     const seenBookIds = new Set();
     let booksAdded = 0;
     const keywordsWithResults = [];
 
     for (const keyword of validKeywords.slice(0, 15)) {
-      const books = await searchLibraryBooks(keyword);
-      
+      const books = await searchLibraryBooks(
+        keyword,
+        courseNameTh,
+        courseNameEn,
+      );
+
       if (books.length > 0) {
         keywordsWithResults.push(keyword);
       }
@@ -41,7 +130,7 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
       for (const book of books) {
         if (!seenBookIds.has(book.Id)) {
           seenBookIds.add(book.Id);
-          
+
           try {
             // Parse CatDate from API response (format: YYMMDD)
             // Pattern: 19-25 = CE year 2019-2025, 62-68 = BE year 2562-2568 (CE 2019-2025)
@@ -50,7 +139,7 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
               const yearShort = parseInt(book.CatDate.substring(0, 2), 10);
               const month = parseInt(book.CatDate.substring(2, 4), 10);
               const day = parseInt(book.CatDate.substring(4, 6), 10);
-              
+
               let yearCE;
               if (yearShort >= 50) {
                 // Buddhist Era: 62 = 2562 BE = 2019 CE
@@ -59,13 +148,13 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
                 // Christian Era: 19 = 2019, 24 = 2024, 25 = 2025
                 yearCE = 2000 + yearShort;
               }
-              
+
               catDate = new Date(yearCE, month - 1, day);
               if (isNaN(catDate.getTime())) {
                 catDate = null;
               }
             }
-            
+
             await client.query(
               `INSERT INTO course_recommended_books 
                (course_id, book_id, title, author, publisher, callnumber, isbn, bookcover, mattype_name, lang, keyword_source, cat_date)
@@ -83,13 +172,13 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
                 book.MattypeName,
                 book.Lang,
                 keyword,
-                catDate
-              ]
+                catDate,
+              ],
             );
             booksAdded++;
           } catch (insertError) {
-            if (insertError.code !== '23505') {
-              console.error('Error inserting book:', insertError.message);
+            if (insertError.code !== "23505") {
+              console.error("Error inserting book:", insertError.message);
             }
           }
         }
@@ -97,9 +186,8 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
     }
 
     return { keywords: validKeywords, keywordsWithResults, booksAdded };
-
   } catch (error) {
-    console.error('Error fetching recommended books:', error);
+    console.error("Error fetching recommended books:", error);
     throw error;
   } finally {
     client.release();
@@ -107,5 +195,5 @@ const fetchAndStoreRecommendedBooks = async (courseId, keywords = []) => {
 };
 
 module.exports = {
-  fetchAndStoreRecommendedBooks
+  fetchAndStoreRecommendedBooks,
 };
